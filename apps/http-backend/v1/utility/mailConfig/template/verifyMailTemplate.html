@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify your Vault account</title>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
+  <style>
+    @media only screen and (max-width: 480px) {
+      .container { width: 100% !important; }
+      .px { padding-left: 24px !important; padding-right: 24px !important; }
+    }
+  </style>
+</head>
+<body style="margin:0; padding:0; background-color:#f4f4f5; font-family:Arial, Helvetica, sans-serif; font-weight:400;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5; padding:48px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="480" class="container" cellpadding="0" cellspacing="0" style="background-color:#ffffff; border:1px solid #e4e4e7; border-radius:8px; overflow:hidden;">
+
+          <!-- Header -->
+          <tr>
+            <td class="px" style="background-color:#0a0a0a; padding:28px 32px;">
+              <span style="color:#ffffff; font-size:18px; font-weight:600; letter-spacing:1.5px; text-transform:uppercase; font-family:Arial, Helvetica, sans-serif;">
+                VAULT
+              </span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td class="px" style="padding:36px 32px 32px;">
+              <p style="margin:0 0 6px; font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:#71717a; font-family:Arial, Helvetica, sans-serif;">
+                Confirm your email
+              </p>
+              <h1 style="margin:0 0 18px; font-size:21px; line-height:1.35; font-weight:600; color:#0a0a0a; font-family:Arial, Helvetica, sans-serif;">
+                Hi {{ name }}, let's activate your vault.
+              </h1>
+              <p style="margin:0 0 16px; font-size:14px; line-height:1.65; font-weight:400; color:#52525b; font-family:Arial, Helvetica, sans-serif;">
+                You're one step away from storing, organizing, and sharing your
+                documents. Confirm your email address to activate your account.
+              </p>
+
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0;">
+                <tr>
+                  <td style="border-radius:6px; background-color:#0a0a0a;">
+                    <a href="{{ verify_link }}"
+                       style="display:inline-block; padding:13px 32px; font-size:14px; font-weight:600; color:#ffffff; text-decoration:none; border-radius:6px; font-family:Arial, Helvetica, sans-serif;">
+                      Verify account
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:0 0 8px; font-size:12px; line-height:1.6; font-weight:400; color:#71717a; font-family:Arial, Helvetica, sans-serif;">
+                If the button above doesn't work, copy and paste this link into your browser:
+              </p>
+              <p style="margin:0 0 24px; font-size:12px; font-weight:400; word-break:break-all; font-family:Arial, Helvetica, sans-serif;">
+                <a href="{{ verify_link }}" style="color:#0a0a0a; text-decoration:underline; font-weight:400;">{{ verify_link }}</a>
+              </p>
+
+              <div style="height:1px; background-color:#e4e4e7; margin:24px 0;"></div>
+
+              <p style="margin:0; font-size:12px; line-height:1.6; font-weight:400; color:#a1a1aa; font-family:Arial, Helvetica, sans-serif;">
+                This link will expire soon for your security. If you didn't create
+                a Vault account, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td class="px" style="padding:20px 32px; background-color:#fafafa; border-top:1px solid #e4e4e7;">
+              <p style="margin:0; font-size:11px; font-weight:400; color:#a1a1aa; font-family:Arial, Helvetica, sans-serif;">
+                &copy; Vault. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

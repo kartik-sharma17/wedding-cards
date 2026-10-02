@@ -5,4 +5,4 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("Shaan")

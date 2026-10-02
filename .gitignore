@@ -34,3 +34,46 @@ yarn-error.log*
 
 # ui
 dist/
+
+# --- Python / FastAPI ---
+
+# virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# packaging
+*.egg-info/
+*.egg
+build/
+dist/
+pip-wheel-metadata/
+
+# env vars (python side)
+.env
+
+# local sqlite db (dev)
+*.db
+*.sqlite3
+
+# pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy / ruff caches
+.mypy_cache/
+.ruff_cache/
+
+# alembic — keep migrations, ignore nothing extra (listed for clarity, not actually ignored)
+# alembic/versions/*.py   <- do NOT ignore this, these must be committed
+
+# editor
+.vscode/
+.idea/

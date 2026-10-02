@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import Field
 from .base import BaseClass
 
 class category():
@@ -14,7 +14,6 @@ class templateType():
 class Template(BaseClass):
     templateName: str
     templateId: Optional[str] = Field(alies="_id") # this help to populate from _id
-    price: int
     category: category = Field(default_factory=category.wedding)
     templateType: templateType = Field(default_factory=templateType.card)
     current_version: int = 1

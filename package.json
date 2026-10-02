@@ -3,6 +3,8 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
+"backend": "cd apps/http-backend && source venv/bin/activate && uvicorn main:app --reload",
+"frontend": "cd apps/web && npm run dev",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",

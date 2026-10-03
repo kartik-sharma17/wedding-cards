@@ -1,7 +1,10 @@
 from datetime import datetime
-from .base import BaseClass, IdentifiedModel
-from pydantic import Field
+from enum import Enum
 from typing import Any
+
+from pydantic import Field
+
+from .base import BaseClass, IdentifiedModel
 
 
 class CardStatus(str, Enum):
@@ -20,6 +23,7 @@ class Card(BaseClass, IdentifiedModel):
     photoUrls: list[str] = Field(default_factory=list)
 
     status: CardStatus = CardStatus.draft
+    publishedAt: datetime | None = None
 
     isPaid: bool = False
     paidAt: datetime | None = None

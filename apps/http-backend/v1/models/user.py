@@ -1,12 +1,13 @@
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, ConfigDict
 from .base import BaseClass
 from typing import Optional
 from datetime import datetime
 
+
 class User(BaseClass):
-    id: Optional[str] = Field(default=None,alias="_id")
-    class Config:
-        allow_population_by_field_name = True
+    model_config = ConfigDict(populate_by_name=True)
+
+    id: Optional[str] = Field(default=None, alias="_id")
     full_name: str
     email: EmailStr
     password: str

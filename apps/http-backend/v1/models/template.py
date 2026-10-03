@@ -1,28 +1,32 @@
-from typing import Optional
-from pydantic import Field
-from .base import BaseClass
+from enum import Enum
+from typing import Any
 
-class category():
+from pydantic import Field
+
+from .base import BaseClass, IdentifiedModel
+
+
+class TemplateCategory(str, Enum):
     wedding = "wedding"
     birthday = "birthday"
     gettogether = "gettogether"
 
-class templateType():
+
+class TemplateType(str, Enum):
     card = "card"
     video = "video"
 
-class Template(BaseClass):
+
+class Template(BaseClass, IdentifiedModel):
     templateName: str
-    templateId: Optional[str] = Field(alies="_id") # this help to populate from _id
-    category: category = Field(default_factory=category.wedding)
-    templateType: templateType = Field(default_factory=templateType.card)
+    category: TemplateCategory = TemplateCategory.wedding
+    templateType: TemplateType = TemplateType.card
     current_version: int = 1
     price: float = 0
     currency: str = "INR"
     is_free: bool = False
-    thumbnail_url: str | None = None                  
-    preview_images: list[str] = Field(default_factory=list)  
+    thumbnail_url: str | None = None
+    preview_images: list[str] = Field(default_factory=list)
     max_photos: int = 0
     requires_video: bool = False
-    is_active: bool = True  
-    
+    is_active: bool = True

@@ -1,8 +1,9 @@
 from bson import ObjectId
-from fastapi import Depends, HTTPException, status
+from bson.errors import InvalidId
+from fastapi import Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from v1.utility import VerifyToken, log
+from v1.utility import VerifyToken, UnauthorizedError
 from v1.db.connectDB import getDB
 
 security = HTTPBearer()
@@ -13,34 +14,23 @@ async def verifyUserDependency(
 ):
     token = credentials.credentials
 
+    result = await VerifyToken(token)
+
+    payload = result.get("data")
+    userId = payload.get("userId") if payload else None
+
+    if userId is None:
+        raise UnauthorizedError("Invalid token")
+
     try:
-        result = await VerifyToken(token)
-        
-        payload = result.get("data")
-        userId = payload.get("userId") if payload else None
+        objectId = ObjectId(userId)
+    except InvalidId:
+        raise UnauthorizedError("Invalid token")
 
-        if userId is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"status": False, "message": "Invalid token payload"},
-            )
+    db = getDB()
+    user = await db["User"].find_one({"_id": objectId})
 
-        db = getDB()
-        user = await db["User"].find_one({"_id": ObjectId(userId)})
+    if user is None:
+        raise UnauthorizedError("User not found")
 
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail={"status": False, "message": "User not found"},
-            )
-
-        return user
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        log.info(f"this is a issue {str(e)}")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"status": False, "message": "Something went wrong while verifying user"},
-        )
+    return user

@@ -1,7 +1,7 @@
 from v1.db.connectDB import getDB
 from v1.models.template import TemplateCategory
 from v1.schema.templateSchema import TemplateSummary, TemplateDetail
-from v1.utility import response, NotFoundError, toObjectId, serializeDoc
+from v1.utility import response, NotFoundError, toObjectId
 
 
 class TemplateService:

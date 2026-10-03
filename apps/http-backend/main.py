@@ -1,6 +1,7 @@
 from sys import prefix
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from v1.routers.route import router
 from v1.db.connectDB import connectDB
 from fastapi.middleware.cors import CORSMiddleware
 from v1.utility import log
@@ -37,3 +38,6 @@ async def welcome():
 @app.head("/")
 async def health_check():
     return JSONResponse(content={"status": "ok"})
+
+
+app.include_router(router, prefix="/api/v1")

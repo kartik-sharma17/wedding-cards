@@ -4,7 +4,6 @@ from v1.services import auth_service
 
 authrouter = APIRouter(prefix="/auth", tags=["auth"])
 
-
 @authrouter.post("/register")
 async def register(user: registerUser):
     return await auth_service.RegisterUser(user)

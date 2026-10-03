@@ -1,5 +1,7 @@
 from .user import User
+from .template import TemplateCategory
 
-__ALL__ = [
-   User
+__all__ = [
+   "User",
+   "TemplateCategory"
 ]

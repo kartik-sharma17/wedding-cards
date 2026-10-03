@@ -41,6 +41,7 @@ dist/
 venv/
 .venv/
 env/
+.env/
 ENV/
 
 # bytecode / cache

@@ -8,8 +8,11 @@ from .base import BaseClass, IdentifiedModel
 
 class TemplateCategory(str, Enum):
     wedding = "wedding"
+    reception = "reception"
+    anniversary = "anniversary"
+    engagement = "engagement"
     birthday = "birthday"
-    gettogether = "gettogether"
+    baby_shower = "baby_shower"
 
 
 class TemplateType(str, Enum):

@@ -1,11 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SafeImage from "@/components/ui/SafeImage";
-import SectionHeading from "@/components/ui/SectionHeading";
-import BrandButton from "@/components/ui/BrandButton";
-import { GALLERY } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SafeImage from "../ui/SafeImage";
+import SectionHeading from "../ui/SectionHeading";
+import BrandButton from "../ui/BrandButton";
+import { GALLERY } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 export default function Gallery() {
   return (

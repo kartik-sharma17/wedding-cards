@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
-import SectionHeading from "@/components/ui/SectionHeading";
-import BrandButton from "@/components/ui/BrandButton";
-import { PLANS } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SectionHeading from "../ui/SectionHeading";
+import BrandButton from "../ui/BrandButton";
+import { PLANS } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 export default function Pricing() {
   return (

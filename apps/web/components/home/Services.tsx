@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import SafeImage from "@/components/ui/SafeImage";
-import SectionHeading from "@/components/ui/SectionHeading";
-import BrandButton from "@/components/ui/BrandButton";
-import { SERVICES } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SafeImage from "../ui/SafeImage";
+import SectionHeading from "../ui/SectionHeading";
+import BrandButton from "../ui/BrandButton";
+import { SERVICES } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 export default function Services() {
   const [active, setActive] = useState(0);
@@ -81,7 +81,7 @@ export default function Services() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6, ease: EASE }}
               >
-                <SafeImage src={SERVICES[active].image} alt={SERVICES[active].title} sizes="(min-width:1024px) 28rem, 90vw" />
+                <SafeImage src={SERVICES[active]?.image || ""} alt={SERVICES[active]?.title || "Images"} sizes="(min-width:1024px) 28rem, 90vw" />
               </motion.div>
             </AnimatePresence>
           </div>

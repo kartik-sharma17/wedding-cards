@@ -3,10 +3,10 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import SafeImage from "@/components/ui/SafeImage";
-import Logo from "@/components/ui/Logo";
-import { IMAGES } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SafeImage from "../ui/SafeImage";
+import Logo from "../ui/Logo";
+import { IMAGES } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 type Props = {
   title: string;

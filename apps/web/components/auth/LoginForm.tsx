@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import FormField from "./FormField";
 import FormAlert from "./FormAlert";
-import BrandButton from "@/components/ui/BrandButton";
-import { useLoginMutation, useResendVerificationMutation } from "@/services/authService";
-import { AFTER_LOGIN_ROUTE, getApiErrorMessage, saveToken } from "@/lib/auth";
-import { isValidEmail } from "@/lib/validators";
+import BrandButton from "../ui/BrandButton";
+import { useLoginMutation, useResendVerificationMutation } from "../../redux/service/authService";
+import { AFTER_LOGIN_ROUTE, getApiErrorMessage, saveToken } from "../../lib/auth";
+import { isValidEmail } from "../../lib/validators";
 
 type Errors = { email?: string; password?: string };
 

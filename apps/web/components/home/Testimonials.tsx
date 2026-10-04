@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import SafeImage from "@/components/ui/SafeImage";
-import SectionHeading from "@/components/ui/SectionHeading";
-import { TESTIMONIALS } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SafeImage from "../ui/SafeImage";
+import SectionHeading from "../ui/SectionHeading";
+import { TESTIMONIALS } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 export default function Testimonials() {
   const [index, setIndex] = useState(0);
@@ -37,15 +37,15 @@ export default function Testimonials() {
               transition={{ duration: 0.6, ease: EASE }}
             >
               <blockquote className="font-serif text-2xl leading-relaxed text-brand-deep md:text-4xl">
-                “{current.quote}”
+                “{current?.quote}”
               </blockquote>
               <figcaption className="flex items-center gap-4">
                 <span className="relative size-12 overflow-hidden rounded-full">
-                  <SafeImage src={current.avatar} alt={current.name} sizes="48px" />
+                  <SafeImage src={current?.avatar || ""} alt={current?.name || "image"} sizes="48px" />
                 </span>
                 <span className="text-left">
-                  <span className="block font-medium text-brand-deep">{current.name}</span>
-                  <span className="block text-sm text-muted-foreground">{current.place}</span>
+                  <span className="block font-medium text-brand-deep">{current?.name || ""}</span>
+                  <span className="block text-sm text-muted-foreground">{current?.place || ""}</span>
                 </span>
               </figcaption>
             </motion.figure>

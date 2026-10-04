@@ -2,10 +2,10 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import SafeImage from "@/components/ui/SafeImage";
-import BrandButton from "@/components/ui/BrandButton";
-import { IMAGES } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SafeImage from "../ui/SafeImage";
+import BrandButton from "../ui/BrandButton";
+import { IMAGES } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 const container = {
   hidden: {},

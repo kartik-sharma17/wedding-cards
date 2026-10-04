@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import { Download, LayoutTemplate, PenLine, Send } from "lucide-react";
-import SectionHeading from "@/components/ui/SectionHeading";
-import { STEPS } from "@/lib/constants";
-import { EASE } from "@/lib/motion";
+import SectionHeading from "../ui/SectionHeading";
+import { STEPS } from "../../lib/constants";
+import { EASE } from "../../lib/motion";
 
 const ICONS = [LayoutTemplate, PenLine, Send, Download];
 

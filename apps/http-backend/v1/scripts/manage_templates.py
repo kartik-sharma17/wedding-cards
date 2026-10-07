@@ -79,7 +79,7 @@ TEMPLATES_JSON = """
 
 async def main():
     client = AsyncIOMotorClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=5000)
-    coll = client[os.environ["DATABASE_NAME"]][os.getenv("MONGO_COLLECTION", "templates")]
+    coll = client[os.environ["DATABASE_NAME"]][os.getenv("MONGO_COLLECTION", "Template")]
     await coll.create_index("templateName", unique=True)
 
     # JSON -> validated Template models, keyed by name

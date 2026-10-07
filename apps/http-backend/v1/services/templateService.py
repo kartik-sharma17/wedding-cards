@@ -37,13 +37,18 @@ class TemplateService:
         )
         docs = await cursor.to_list(length=limit)
 
-        items = [
-            TemplateSummary.model_validate(serializeDoc(d)).model_dump(mode="json")
-            for d in docs
-        ]
+        items = []
+
+        for d in docs:
+            d["id"] = str(d.pop("_id"))
+            items.append(TemplateSummary.model_validate(d).model_dump(mode="json"))
+
         return response(
             message="Templates fetched successfully",
             data={"items": items, "page": page, "limit": limit, "total": total},
         )
+
+
+
 
 template_service = TemplateService()

@@ -15,7 +15,7 @@ export const IMAGES = {
 
 export const NAV_LEFT = [
   { label: "Services", href: "/#services" },
-  { label: "Templates", href: "/#templates" },
+  { label: "Templates", href: "/templates" },
   { label: "About us", href: "/#about" },
 ];
 
@@ -126,7 +126,7 @@ export const FOOTER_LINKS = [
   {
     heading: "Explore",
     links: [
-      { label: "Templates", href: "/#templates" },
+      { label: "Templates", href: "/templates" },
       { label: "How it works", href: "/#how-it-works" },
       { label: "Pricing", href: "/#pricing" },
     ],

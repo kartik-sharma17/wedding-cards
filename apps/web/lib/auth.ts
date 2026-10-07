@@ -52,3 +52,12 @@ export function getApiErrorMessage(error: unknown, fallback = FALLBACK_ERROR): s
 
   return fallback;
 }
+
+/** Only allow same-site redirect targets coming from the ?next= param. */
+export function getSafeRedirect(next: string | null): string {
+  if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+  return AFTER_LOGIN_ROUTE;
+}
+
+export const isUnauthorizedError = (error: unknown): boolean =>
+  Boolean(error && typeof error === "object" && (error as { status?: unknown }).status === 401);

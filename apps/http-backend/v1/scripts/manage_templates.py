@@ -1,14 +1,14 @@
 """
-Sync the TEMPLATES_JSON below with the MongoDB `templates` collection.
+Sync the TEMPLATES_JSON below with the MongoDB templates collection.
 
   - in JSON, not in DB      -> added
   - in both, but different  -> updated
   - in DB, not in JSON      -> deleted
 
-Templates are matched by `templateName`.
+Templates are matched by `slug` (unique). `templateName` can repeat.
 
-Run:  python sync_templates.py
-Env:  MONGO_URI, MONGO_DB_NAME, (optional) MONGO_COLLECTION
+Run:  python -m v1.scripts.manage_templates
+Env:  MONGO_URL, DATABASE_NAME, (optional) MONGO_COLLECTION
 """
 
 import asyncio
@@ -17,6 +17,7 @@ import os
 
 from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
+from pymongo.errors import OperationFailure
 from v1.models import Template
 
 load_dotenv()
@@ -25,6 +26,7 @@ TEMPLATES_JSON = """
 [
   {
     "templateName": "Royal Wedding",
+    "slug": "royal-wedding",
     "category": "wedding",
     "templateType": "card",
     "current_version": 1,
@@ -42,6 +44,7 @@ TEMPLATES_JSON = """
   },
   {
     "templateName": "Golden Anniversary",
+    "slug": "golden-anniversary",
     "category": "anniversary",
     "templateType": "video",
     "current_version": 1,
@@ -58,6 +61,7 @@ TEMPLATES_JSON = """
   },
   {
     "templateName": "Baby Bloom",
+    "slug": "baby-bloom",
     "category": "baby_shower",
     "templateType": "card",
     "current_version": 1,
@@ -80,38 +84,60 @@ TEMPLATES_JSON = """
 async def main():
     client = AsyncIOMotorClient(os.environ["MONGO_URL"], serverSelectionTimeoutMS=5000)
     coll = client[os.environ["DATABASE_NAME"]][os.getenv("MONGO_COLLECTION", "Template")]
-    await coll.create_index("templateName", unique=True)
 
-    # JSON -> validated Template models, keyed by name
+    # Remove the old unique index on templateName (if it still exists)
+    try:
+        await coll.drop_index("templateName_1")
+        print("[index]   dropped old unique index on templateName")
+    except OperationFailure:
+        pass
+
+    # JSON -> validated Template models, keyed by slug
     wanted = {}
     for item in json.loads(TEMPLATES_JSON):
         t = Template(**item)
-        wanted[t.templateName] = {
-            "full": t.model_dump(mode="json"),                    # used for insert
-            "fields": t.model_dump(mode="json", exclude_unset=True),  # only what's in the JSON
+        if t.slug in wanted:
+            raise SystemExit(f"Duplicate slug in JSON: {t.slug}")
+        wanted[t.slug] = {
+            "full": t.model_dump(mode="json", exclude={"id"}),           # used for insert
+            "fields": t.model_dump(mode="json", exclude_unset=True),     # only what's in the JSON
         }
 
-    # What's currently in DB, keyed by name
-    existing = {doc["templateName"]: doc async for doc in coll.find({})}
+    # What's currently in DB, keyed by slug (old docs without a slug use None)
+    existing = {}
+    stale_ids = []
+    async for doc in coll.find({}):
+        slug = doc.get("slug")
+        if slug is None or slug in existing:
+            stale_ids.append(doc["_id"])   # no slug / duplicate slug -> remove
+        else:
+            existing[slug] = doc
+
+    # Delete docs that are no longer in the JSON (before the unique index is built)
+    for slug, doc in list(existing.items()):
+        if slug not in wanted:
+            stale_ids.append(doc["_id"])
+            print(f"[deleted] {slug}")
+            del existing[slug]
+    if stale_ids:
+        res = await coll.delete_many({"_id": {"$in": stale_ids}})
+        print(f"[cleanup] removed {res.deleted_count} doc(s) not in JSON (incl. any without a slug)")
+
+    await coll.create_index("slug", unique=True)
 
     # Add / update
-    for name, data in wanted.items():
-        if name not in existing:
+    for slug, data in wanted.items():
+        if slug not in existing:
             await coll.insert_one(data["full"])
-            print(f"[added]   {name}")
+            print(f"[added]   {slug}")
         else:
-            db_doc = existing[name]
+            db_doc = existing[slug]
             changed = {k: v for k, v in data["fields"].items() if db_doc.get(k) != v}
             if changed:
-                await coll.update_one({"templateName": name}, {"$set": changed})
-                print(f"[updated] {name}: {', '.join(changed)}")
+                await coll.update_one({"slug": slug}, {"$set": changed})
+                print(f"[updated] {slug}: {', '.join(changed)}")
             else:
-                print(f"[same]    {name}")
-
-    # Delete anything in DB that's no longer in the JSON
-    for name in existing.keys() - wanted.keys():
-        await coll.delete_one({"templateName": name})
-        print(f"[deleted] {name}")
+                print(f"[same]    {slug}")
 
     client.close()
 

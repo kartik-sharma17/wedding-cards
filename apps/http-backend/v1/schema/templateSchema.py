@@ -7,6 +7,7 @@ from v1.models.template import TemplateCategory, TemplateType
 class TemplateSummary(BaseModel):
     id: str
     templateName: str
+    slug: str
     category: TemplateCategory
     templateType: TemplateType
     current_version: int = 1

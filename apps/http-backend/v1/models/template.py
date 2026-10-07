@@ -22,6 +22,7 @@ class TemplateType(str, Enum):
 
 class Template(BaseClass, IdentifiedModel):
     templateName: str
+    slug: str
     category: TemplateCategory = TemplateCategory.wedding
     templateType: TemplateType = TemplateType.card
     current_version: int = 1

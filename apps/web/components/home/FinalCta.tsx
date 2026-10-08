@@ -2,11 +2,11 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import SafeImage from "../ui/SafeImage";
-import SectionHeading from "../ui/SectionHeading";
-import BrandButton from "../ui/BrandButton";
-import Reveal from "../ui/Reveal";
-import { IMAGES } from "../../lib/constants";
+import SafeImage from "@/components/ui/SafeImage";
+import SectionHeading from "@/components/ui/SectionHeading";
+import BrandButton from "@/components/ui/BrandButton";
+import Reveal from "@/components/ui/Reveal";
+import { IMAGES } from "@/lib/constants";
 
 export default function FinalCta() {
   const ref = useRef<HTMLElement>(null);

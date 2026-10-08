@@ -1,19 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import Logo from "../ui/Logo";
-import BrandButton from "../ui/BrandButton";
-import { NAV_LEFT, NAV_RIGHT } from "../../lib/constants";
-import { clearToken, getToken } from "../../lib/auth";
-import { EASE } from "../../lib/motion";
+import Logo from "@/components/ui/Logo";
+import BrandButton from "@/components/ui/BrandButton";
+import { NAV_LEFT, NAV_RIGHT } from "@/lib/constants";
+import { clearToken, getToken } from "@/lib/auth";
+import { EASE } from "@/lib/motion";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -24,7 +26,8 @@ export default function Navbar() {
 
   useEffect(() => setLoggedIn(Boolean(getToken())), []);
 
-  const solid = scrolled || open;
+  // The home hero is dark, so the bar starts transparent there. Every other page needs it solid.
+  const solid = scrolled || open || pathname !== "/";
   const linkClass = "text-sm tracking-wide transition-opacity hover:opacity-70";
 
   const logout = () => {

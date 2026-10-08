@@ -15,6 +15,6 @@ async def list_templates(
     return await template_service.ListTemplates(category, page, limit)
 
 
-@templateRouter.get("/{templateId}", summary="Template detail (fields + manifest)")
-async def get_template(templateId: str):
-    return await template_service.GetTemplate(templateId)
+@templateRouter.get("/{slug}", summary="Template detail (fields + manifest)")
+async def get_template(slug: str):
+    return await template_service.GetTemplate(slug)

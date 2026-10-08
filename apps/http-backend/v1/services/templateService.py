@@ -21,6 +21,26 @@ class TemplateService:
 
         return response(data=result)
 
+    async def FindBySlug(self, slug: str, activeOnly: bool = True):
+        """Raw template doc or None, looked up by slug."""
+
+        query: dict = {"slug": slug.strip().lower()}
+        if activeOnly:
+            query["is_active"] = True
+
+        return await self.collection.find_one(query)
+
+    async def GetTemplate(self, slug: str):
+        doc = await self.FindBySlug(slug)
+
+        if doc is None:
+            return response(status=False, message="Template not found", code=404)
+
+        doc["id"] = str(doc.pop("_id"))
+        data = TemplateDetail.model_validate(doc).model_dump(mode="json")
+
+        return response(message="Template fetched successfully", data=data)
+
     async def ListTemplates(
         self, category: TemplateCategory | None, page: int, limit: int
     ):
@@ -47,8 +67,6 @@ class TemplateService:
             message="Templates fetched successfully",
             data={"items": items, "page": page, "limit": limit, "total": total},
         )
-
-
 
 
 template_service = TemplateService()

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
-import { EASE } from "../../lib/motion";
+import { EASE } from "@/lib/motion";
 
 type Props = {
   children: ReactNode;

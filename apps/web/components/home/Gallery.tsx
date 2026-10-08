@@ -1,11 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import SafeImage from "../ui/SafeImage";
-import SectionHeading from "../ui/SectionHeading";
-import BrandButton from "../ui/BrandButton";
-import { GALLERY } from "../../lib/constants";
-import { EASE } from "../../lib/motion";
+import SafeImage from "@/components/ui/SafeImage";
+import SectionHeading from "@/components/ui/SectionHeading";
+import BrandButton from "@/components/ui/BrandButton";
+import { GALLERY } from "@/lib/constants";
+import { EASE } from "@/lib/motion";
 
 export default function Gallery() {
   return (
@@ -16,8 +16,8 @@ export default function Gallery() {
           title={"Designs ready for your\nnext celebration"}
           description="A glimpse of the styles you can start from. Every one is fully editable."
         >
-          <BrandButton href="/register" variant="deep">
-            Start with a template
+          <BrandButton href="/templates" variant="deep">
+            Browse all templates
           </BrandButton>
         </SectionHeading>
 

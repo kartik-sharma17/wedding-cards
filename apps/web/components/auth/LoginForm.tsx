@@ -1,19 +1,20 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import FormField from "./FormField";
 import FormAlert from "./FormAlert";
-import BrandButton from "../ui/BrandButton";
-import { useLoginMutation, useResendVerificationMutation } from "../../redux/service/authService";
-import { AFTER_LOGIN_ROUTE, getApiErrorMessage, saveToken } from "../../lib/auth";
-import { isValidEmail } from "../../lib/validators";
+import BrandButton from "@/components/ui/BrandButton";
+import { getApiErrorMessage, getSafeRedirect, saveToken } from "@/lib/auth";
+import { isValidEmail } from "@/lib/validators";
+import { useResendVerificationMutation,useLoginMutation } from "@/redux/service/authService";
 
 type Errors = { email?: string; password?: string };
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [login, { isLoading }] = useLoginMutation();
   const [resend, { isLoading: isResending }] = useResendVerificationMutation();
 
@@ -43,7 +44,7 @@ export default function LoginForm() {
     try {
       const res = await login({ email: email.trim(), password }).unwrap();
       saveToken(res.data.token);
-      router.replace(AFTER_LOGIN_ROUTE);
+      router.replace(getSafeRedirect(searchParams.get("next")));
     } catch (err) {
       const message = getApiErrorMessage(err);
       setServerError(message);

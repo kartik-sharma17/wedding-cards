@@ -6,11 +6,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Loader2, MailCheck } from "lucide-react";
 import FormField from "./FormField";
 import FormAlert from "./FormAlert";
-import BrandButton from "../ui/BrandButton";
-import { useRegisterMutation, useResendVerificationMutation } from "../../redux/service/authService";
-import { getApiErrorMessage } from "../../lib/auth";
-import { isValidEmail, isValidPhone, MIN_PASSWORD_LENGTH } from "../../lib/validators";
-import { EASE } from "../../lib/motion";
+import BrandButton from "@/components/ui/BrandButton";
+import { getApiErrorMessage } from "@/lib/auth";
+import { isValidEmail, isValidPhone, MIN_PASSWORD_LENGTH } from "@/lib/validators";
+import { EASE } from "@/lib/motion";
+import { useRegisterMutation, useResendVerificationMutation } from "@/redux/service/authService";
 
 type Fields = { full_name: string; email: string; phone: string; password: string; confirm: string };
 type Errors = Partial<Record<keyof Fields, string>>;

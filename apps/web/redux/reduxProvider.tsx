@@ -3,7 +3,7 @@
 import { Provider } from 'react-redux'
 import { store } from './store'
 import { ReactNode } from 'react'
-import { Toaster } from '../components/ui/sonner'
+import { Toaster } from 'sonner'
 
 
 export const ReduxProvider = ({ children }: { children: ReactNode }) => {

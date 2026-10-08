@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Logo from "../ui/Logo";
-import { FOOTER_LINKS } from "../../lib/constants";
+import Logo from "@/components/ui/Logo";
+import { FOOTER_LINKS } from "@/lib/constants";
 
 export default function Footer() {
   return (

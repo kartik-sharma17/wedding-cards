@@ -15,7 +15,7 @@ export const IMAGES = {
 
 export const NAV_LEFT = [
   { label: "Services", href: "/#services" },
-  { label: "Templates", href: "/templates" },
+  { label: "Templates", href: "/template" },
   { label: "About us", href: "/#about" },
 ];
 

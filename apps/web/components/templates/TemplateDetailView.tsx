@@ -133,7 +133,7 @@ export default function TemplateDetailView({ slug }: { slug: string }) {
           <p className="font-serif text-2xl leading-none text-brand-deep">{price}</p>
           <p className="text-xs text-muted-foreground">{free ? "Free template" : "to download"}</p>
         </div>
-        <BrandButton onClick={onCreate} variant="deep" className="!px-6">
+        <BrandButton onClick={onCreate} variant="deep" className="px-6!">
           Create your card
         </BrandButton>
       </div>

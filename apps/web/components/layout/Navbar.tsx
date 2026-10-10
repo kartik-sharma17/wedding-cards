@@ -81,9 +81,9 @@ export default function Navbar() {
           </ul>
           <div className="hidden items-center gap-6 lg:flex">
             {loggedIn ? (
-              <button type="button" onClick={logout} className={linkClass}>
-                Log out
-              </button>
+              <BrandButton href="/dashboard" variant="gold" className="!px-5 !py-2.5">
+                  Dashbaord
+                </BrandButton>
             ) : (
               <>
                 <Link href="/login" className={linkClass}>

@@ -34,3 +34,5 @@ class Template(BaseClass, IdentifiedModel):
     max_photos: int = 0
     requires_video: bool = False
     is_active: bool = True
+    supportedFields: list[str] = Field(default_factory=list)
+    manifest: dict[str, Any] = Field(default_factory=dict)

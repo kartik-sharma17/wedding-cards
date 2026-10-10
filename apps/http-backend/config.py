@@ -20,5 +20,8 @@ class Settings:
     B2_BUCKET_NAME: str = os.getenv("B2_BUCKET_NAME")
 
     BASE_URL: str = os.getenv("BASE_URL")
+    
+    IMAGEKIT_PRIVATE_KEY: str = os.getenv("IMAGEKIT_PRIVATE_KEY")
+
 
 settings = Settings()

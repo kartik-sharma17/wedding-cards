@@ -1,5 +1,6 @@
 from pydantic import BaseModel,EmailStr
 from typing import Optional
+from v1.models.user import UserRole
 
 class registerUser(BaseModel):
     full_name: str
@@ -12,3 +13,7 @@ class registerUser(BaseModel):
 class LoginSchema(BaseModel):
     email: EmailStr
     password: str
+
+class AuthMe(BaseModel):
+    email: Optional[EmailStr]
+    role: Optional[UserRole]

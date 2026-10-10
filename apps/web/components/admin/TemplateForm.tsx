@@ -11,9 +11,10 @@ import {
   useAdminUpdateTemplateMutation,
   type AdminTemplate,
   type TemplateFormData,
-} from "@/services/adminTemplateService";
-import { CATEGORY_LABELS, type TemplateCategory } from "@/services/templateService";
+} from "@/redux/service/adminTemplateService";
+import { CATEGORY_LABELS, type TemplateCategory } from "@/redux/service/templateService";
 import { getApiErrorMessage } from "@/lib/auth";
+
 
 const MAX_PREVIEWS = 8;
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;

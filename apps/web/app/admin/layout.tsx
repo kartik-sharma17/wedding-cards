@@ -5,7 +5,7 @@ import Link from "next/link";
 import Cookies from "js-cookie";
 import { usePathname, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useGetMeQuery } from "@/services/authService";
+import { useGetMeQuery } from "@/redux/service/authService";
 
 function Screen({ title, text, children }: { title: string; text?: string; children?: ReactNode }) {
   return (

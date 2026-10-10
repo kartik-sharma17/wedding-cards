@@ -1,6 +1,7 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from v1.schema import registerUser, LoginSchema
 from v1.services import auth_service
+from v1.dependencies import verifyUserDependency 
 
 authrouter = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,3 +21,7 @@ async def login(cred: LoginSchema):
 @authrouter.post("/resend-verification")
 async def resendVerificationLink(email: str):
     return await auth_service.ResendVerificationLink(email)
+
+@authrouter.get("/me")
+async def getMe(user: dict = Depends(verifyUserDependency)):
+    return await auth_service.GetMe(user)

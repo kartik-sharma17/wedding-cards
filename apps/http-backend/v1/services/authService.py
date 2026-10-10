@@ -1,5 +1,7 @@
+import email
+
 from v1.models import User
-from v1.schema import registerUser, LoginSchema
+from v1.schema import registerUser, LoginSchema, AuthMe
 from v1.db.connectDB import getDB
 from v1.utility import (
     response,
@@ -152,6 +154,16 @@ class Auth:
                 "last_login": user.get("last_login"),
             },
         )
+
+    async def GetMe(self,user:str):
+        userData = AuthMe(
+            email = user["email"] if user.get("email") else None,
+            role = user["role"] if user.get("role") else None,
+        )
+        return response(
+                    message="User data fetched Successfully",
+                    data=userData.model_dump(),
+                )
 
 
 auth_service = Auth()

@@ -28,7 +28,7 @@ async def verifyUserDependency(
         raise UnauthorizedError("Invalid token")
 
     db = getDB()
-    user = await db["User"].find_one({"_id": objectId})
+    user = await db["User"].find_one({"_id": objectId, "is_verified": True})
 
     if user is None:
         raise UnauthorizedError("User not found")

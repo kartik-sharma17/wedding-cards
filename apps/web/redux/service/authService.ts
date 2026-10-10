@@ -24,6 +24,9 @@ export type AuthData = {
   last_login: string | null;
 };
 
+export type UserRole = "user" | "admin";
+export type Me = { name: string; email: string; role: UserRole };
+
 export const authService = RootApiService.injectEndpoints({
   endpoints: (build) => ({
     login: build.mutation<ApiResponse<AuthData>, LoginRequest>({
@@ -44,6 +47,11 @@ export const authService = RootApiService.injectEndpoints({
       }),
     }),
 
+    // GET /auth/me – used by the admin area to check the role.
+    getMe: build.query<ApiResponse<Me>, void>({
+      query: () => ({ url: "/auth/me", method: "GET" }),
+    }),
+
     // For the future /verify-email/[token] page.
     verifyEmail: build.query<ApiResponse<AuthData>, string>({
       query: (token) => ({ url: `/auth/verify-email/${token}`, method: "GET" }),
@@ -57,4 +65,5 @@ export const {
   useRegisterMutation,
   useResendVerificationMutation,
   useVerifyEmailQuery,
+  useGetMeQuery,
 } = authService;

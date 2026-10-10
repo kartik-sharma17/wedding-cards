@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import TemplateForm from "@/components/admin/TemplateForm";
-import { useAdminGetTemplateQuery } from "@/services/adminTemplateService";
+import { useAdminGetTemplateQuery } from "@/redux/service/adminTemplateService";
 
 export default function EditTemplatePage() {
   const { id } = useParams<{ id: string }>();

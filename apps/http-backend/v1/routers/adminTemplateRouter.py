@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 
 from v1.dependencies import verifyAdminDependency
 from v1.models.template import TemplateCategory
-from v1.services.adminTemplateService import admin_template_service
+from v1.services import admin_template_service
 
 # Every route here needs an admin, so the check is applied to the whole router.
 adminTemplateRouter = APIRouter(
@@ -12,7 +12,6 @@ adminTemplateRouter = APIRouter(
     tags=["Admin Templates"],
     dependencies=[Depends(verifyAdminDependency)],
 )
-
 
 @adminTemplateRouter.post("", summary="Create a template (multipart: data JSON + images)")
 async def createTemplate(

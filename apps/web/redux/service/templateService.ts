@@ -37,11 +37,13 @@ export const templateService = RootApiService.injectEndpoints({
         const { category, page = 1, limit = 12 } = args ?? {};
         return { url: "/templates", method: "GET", params: { page, limit, ...(category && { category }) } };
       },
+      providesTags: ["Template"],
     }),
 
     // GET /templates/{slug}
     getTemplateBySlug: build.query<ApiResponse<TemplateDetail>, string>({
       query: (slug) => ({ url: `/templates/${encodeURIComponent(slug)}`, method: "GET" }),
+      providesTags: ["Template"],
     }),
   }),
   overrideExisting: false,

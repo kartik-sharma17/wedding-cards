@@ -10,8 +10,8 @@ import {
   useAdminGetTemplatesQuery,
   useAdminUpdateTemplateMutation,
   type AdminTemplate,
-} from "@/services/adminTemplateService";
-import { CATEGORY_LABELS, formatPrice, type TemplateCategory } from "@/services/templateService";
+} from "@/redux/service/adminTemplateService";
+import { CATEGORY_LABELS, formatPrice, type TemplateCategory } from "@/redux/service/templateService";
 import { getApiErrorMessage } from "@/lib/auth";
 
 const PAGE_SIZE = 10;

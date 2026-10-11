@@ -23,5 +23,8 @@ class Settings:
     
     IMAGEKIT_PRIVATE_KEY: str = os.getenv("IMAGEKIT_PRIVATE_KEY")
 
+    RAZORPAY_API: str = os.getenv("RAZORPAY_API")
+    RAZOR_PAY_API_KEY: str = os.getenv("RAZOR_PAY_API_KEY")
+    RAZOR_PAY_SECRET: str = os.getenv("RAZOR_PAY_SECRET")
 
 settings = Settings()

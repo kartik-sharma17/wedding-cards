@@ -1,8 +1,24 @@
+import { Suspense } from "react";
+import CardPaymentGate from "@/components/payments/Cardpaymentgate";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function CardLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ cardId: string }>;
+}) {
   return (
     <>
-      <main className="mt-20">{children}</main>
+      {children}
+      <Suspense fallback={null}>
+        <PaymentGate params={params} />
+      </Suspense>
     </>
   );
+}
+
+async function PaymentGate({ params }: { params: Promise<{ cardId: string }> }) {
+  const { cardId } = await params;
+  return <CardPaymentGate cardId={cardId} />;
 }

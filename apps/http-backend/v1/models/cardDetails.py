@@ -78,7 +78,6 @@ SpecificDetails = Annotated[
 # MAIN CLASS — common fields + the specific details + category/template refs
 # ---------------------------------------------------------------------
 class CardDetails(BaseClass, IdentifiedModel):
-    cardId: str
     templateId: str
     templateCategory: TemplateCategory
 

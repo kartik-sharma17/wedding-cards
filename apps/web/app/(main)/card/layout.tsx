@@ -10,7 +10,9 @@ export default function CardLayout({
 }) {
   return (
     <>
+    <div className="mt-20">
       {children}
+    </div>
       <Suspense fallback={null}>
         <PaymentGate params={params} />
       </Suspense>

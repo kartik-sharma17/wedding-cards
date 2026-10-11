@@ -10,6 +10,7 @@ import httpx
 from fastapi import HTTPException
 
 from v1.db.connectDB import getDB
+from v1.models import PaymentProvider, PaymentStatus
 from v1.schema import CreateOrderSchema, VerifyPaymentSchema
 from v1.utility import (
     response,
@@ -22,6 +23,9 @@ from v1.utility import (
 logger = logging.getLogger(__name__)
 
 RAZORPAY_API = settings.RAZORPAY_API
+PROVIDER = PaymentProvider.razorpay.value
+CREATED = PaymentStatus.created.value
+PAID = PaymentStatus.paid.value
 
 
 def _credentials() -> tuple[str, str]:
@@ -34,9 +38,9 @@ def _credentials() -> tuple[str, str]:
     return key_id, key_secret
 
 
-def _to_paise(price) -> int:
-    """Template price is in rupees (major units); Razorpay wants paise (minor units)."""
-    return int((Decimal(str(price)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+def _to_paise(amount) -> int:
+    """Payment.amount is in rupees (major units); Razorpay wants paise (minor units)."""
+    return int((Decimal(str(amount)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
 def _now() -> datetime:
@@ -84,7 +88,7 @@ class PaymentService:
         if template.get("is_free") or price <= 0:
             raise BadRequestError("This template is free, so no payment is needed")
 
-        amount = _to_paise(price)
+        amount = float(price)  # rupees, matches Payment.amount
         currency = template.get("currency") or "INR"
         key_id, key_secret = _credentials()
 
@@ -93,11 +97,12 @@ class PaymentService:
             {
                 "cardId": payload.cardId,
                 "userId": userId,
-                "status": "created",
+                "provider": PROVIDER,
+                "status": CREATED,
                 "amount": amount,
                 "currency": currency,
             },
-            sort=[("createdAt", -1)],
+            sort=[("_id", -1)],  # newest first
         )
         if existing:
             return response(
@@ -111,7 +116,7 @@ class PaymentService:
                     f"{RAZORPAY_API}/orders",
                     auth=(key_id, key_secret),
                     json={
-                        "amount": amount,
+                        "amount": _to_paise(amount),
                         "currency": currency,
                         "receipt": f"card_{payload.cardId}"[:40],
                         "notes": {"cardId": payload.cardId, "userId": userId},
@@ -136,14 +141,14 @@ class PaymentService:
         payment_doc = {
             "cardId": payload.cardId,
             "userId": userId,
-            "templateId": card["templateId"],
-            "orderId": order["id"],
-            "amount": amount,  # paise
+            "provider": PROVIDER,
+            "providerOrderId": order["id"],
+            "providerPaymentId": None,
+            "amount": amount,
             "currency": currency,
-            "status": "created",  # created -> paid
-            "paymentId": None,
-            "gatewayResponse": None,  # filled in after verification
-            "paidAt": None,
+            "status": CREATED,
+            "gatewayEvents": [],
+            "failureReason": None,
         }
         await self.payments.insert_one(payment_doc)
 
@@ -156,7 +161,9 @@ class PaymentService:
     # 2) Verify payment
     # ------------------------------------------------------------------
     async def verifyPayment(self, user: dict, payload: VerifyPaymentSchema):
-        payment = await self.payments.find_one({"orderId": payload.razorpay_order_id})
+        payment = await self.payments.find_one(
+            {"provider": PROVIDER, "providerOrderId": payload.razorpay_order_id}
+        )
         if payment is None:
             raise NotFoundError("Payment order not found")
 
@@ -164,8 +171,8 @@ class PaymentService:
             raise ForbiddenError("You don't have access to this payment")
 
         # Already verified (double submit or a retry): just make sure the card is unlocked.
-        if payment["status"] == "paid":
-            await self._markCardPaid(payment, payment.get("paidAt") or _now())
+        if payment["status"] == PAID:
+            await self._markCardPaid(payment)
             return response(
                 message="Payment already verified",
                 data={"cardId": payment["cardId"], "isPaid": True},
@@ -182,27 +189,38 @@ class PaymentService:
         if not hmac.compare_digest(
             expected.encode(), payload.razorpay_signature.encode()
         ):
-            logger.warning("Bad Razorpay signature for order %s", payment["orderId"])
+            logger.warning(
+                "Bad Razorpay signature for order %s", payment["providerOrderId"]
+            )
             raise BadRequestError("Payment verification failed")
 
         # Best effort: keep Razorpay's full payment object for the records.
         gateway = await self._fetchGatewayPayment(
             payload.razorpay_payment_id, key_id, key_secret
         )
-        if gateway and gateway.get("amount") not in (None, payment["amount"]):
-            logger.error("Amount mismatch on order %s", payment["orderId"])
+        if gateway and gateway.get("amount") not in (
+            None,
+            _to_paise(payment["amount"]),
+        ):
+            logger.error("Amount mismatch on order %s", payment["providerOrderId"])
             raise BadRequestError("Payment amount does not match the order")
 
         paid_at = _now()
         await self.payments.update_one(
-            {"_id": payment["_id"], "status": "created"},  # only the first request wins
+            {"_id": payment["_id"], "status": CREATED},  # only the first request wins
             {
                 "$set": {
-                    "status": "paid",
-                    "paymentId": payload.razorpay_payment_id,
-                    "gatewayResponse": gateway or payload.model_dump(),
-                    "paidAt": paid_at,
-                }
+                    "status": PAID,
+                    "providerPaymentId": payload.razorpay_payment_id,
+                    "failureReason": None,
+                },
+                "$push": {
+                    "gatewayEvents": {
+                        "event": "payment.verified",
+                        "receivedAt": paid_at,
+                        "payload": gateway or payload.model_dump(),
+                    }
+                },
             },
         )
         await self._markCardPaid(payment, paid_at)
@@ -217,21 +235,26 @@ class PaymentService:
     # ------------------------------------------------------------------
     @staticmethod
     def _orderData(payment: dict, key_id: str) -> dict:
+        # The API response keys are unchanged, so the frontend needs no edits.
         return {
-            "orderId": payment["orderId"],
-            "amount": payment["amount"],
+            "orderId": payment["providerOrderId"],
+            "amount": _to_paise(payment["amount"]),  # Razorpay Checkout wants paise
             "currency": payment["currency"],
             "keyId": key_id,  # public key, safe to send to the browser
         }
 
-    async def _markCardPaid(self, payment: dict, paid_at: datetime):
+    async def _markCardPaid(self, payment: dict, paid_at: datetime | None = None):
         await self.cards.update_one(
-            {"_id": toObjectId(payment["cardId"], "Card not found")},
+            # the isPaid filter keeps the original paidAt on repeated calls
+            {
+                "_id": toObjectId(payment["cardId"], "Card not found"),
+                "isPaid": {"$ne": True},
+            },
             {
                 "$set": {
                     "isPaid": True,
-                    "paidAt": paid_at,
-                    "paymentId": str(payment["_id"]),  # id of the Payment document
+                    "paidAt": paid_at or _now(),
+                    "paymentId": str(payment["_id"]),
                 }
             },
         )

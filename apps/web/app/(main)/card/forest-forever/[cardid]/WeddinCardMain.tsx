@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import WeddingTemplate1 from "./Weddingtemplate1";
 import { DEMO_WEDDING, mapCardToWeddingView, type CardDetailsApi } from "./ Weddingcard";
 import { useGetCardQuery } from "@/redux/service/cardService";
+import { getApiErrorMessage } from "@/lib/apiError";
 
 export default function WeddingTemplate1Page({ cardId }: { cardId?: string | undefined }) {
   const id = cardId?.trim();
@@ -29,7 +30,7 @@ function CardFromApi({ cardId }: { cardId: string }) {
   if (error || (!isFetching && !mapped)) {
     return (
       <Shell>
-        <Panel title="We couldn't load this card" message={errorMessage(error)} onRetry={() => refetch()} />
+        <Panel title="We couldn't load this card" message={getApiErrorMessage(error)} onRetry={() => refetch()} />
       </Shell>
     );
   }

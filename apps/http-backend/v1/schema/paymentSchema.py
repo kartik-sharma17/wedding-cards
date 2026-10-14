@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 
 class CreateOrderSchema(BaseModel):
     cardId: str = Field(min_length=1)
+    couponCode: str | None = Field(default=None, max_length=40)
 
 
 class VerifyPaymentSchema(BaseModel):

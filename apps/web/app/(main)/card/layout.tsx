@@ -1,26 +1,16 @@
+// Place at  app/(main)/card/layout.tsx  (the layout that sits above every template folder).
 import { Suspense } from "react";
-import CardPaymentGate from "@/components/payments/Cardpaymentgate";
+import CardPaymentGateRoute from "@/components/payments/CardPaymentGateRoute";
 
-export default function CardLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: Promise<{ cardId: string }>;
-}) {
+export default function CardLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
     <div className="mt-20">
       {children}
     </div>
       <Suspense fallback={null}>
-        <PaymentGate params={params} />
+        <CardPaymentGateRoute />
       </Suspense>
     </>
   );
-}
-
-async function PaymentGate({ params }: { params: Promise<{ cardId: string }> }) {
-  const { cardId } = await params;
-  return <CardPaymentGate cardId={cardId} />;
 }

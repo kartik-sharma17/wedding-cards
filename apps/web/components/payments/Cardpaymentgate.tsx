@@ -3,24 +3,31 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { EASE } from "@/lib/motion";
+import { getApiErrorMessage } from "@/lib/apiError";
 import { loadRazorpay, type RazorpaySuccess } from "@/lib/razorpay";
 import { useGetCardQuery } from "@/redux/service/cardService";
-import { useCreatePaymentOrderMutation, useVerifyPaymentMutation } from "@/redux/service/paymentservice";
+import {
+  useCreatePaymentOrderMutation,
+  useGetPaymentQuoteQuery,
+  useLazyGetPaymentQuoteQuery,
+  useVerifyPaymentMutation,
+  type PaymentQuote,
+} from "@/redux/service/paymentservice";
+
 /**
- * Shared "unlock this card" UI. Works with every template because it lives in the card
- * route layout, not inside a template.
+ * Shared "unlock this card" UI, mounted once in the card layout so every template gets it.
  *
- *  - Reads the card with the same query the page uses (RTK Query dedupes it: one request).
- *  - Renders nothing until the card loads, and nothing once the card is paid.
- *  - Opens the benefits popup `delayMs` after the card loads (once per session per card).
- *  - Keeps a small floating "Pay now" button for afterwards.
- *  - Only ever sends the cardId to the backend; the price is decided server-side.
+ *  Panel   : desktop (lg+) floats on the right, vertically centred; on smaller screens it sits
+ *            below the card. Holds "Pay now <amount>" (becomes "Paid") and a locked "Download PDF".
+ *  Dialog  : opens 5s after the card loads, or when Pay now / the locked Download is clicked.
+ *            Coupon entry, price summary, PDF disclaimer, then it creates the order.
+ *  Only the cardId (and an optional coupon code) is sent to the backend; the price is decided server-side.
  */
 
 type Feature = { title: string; text: string };
 
 const DEFAULT_FEATURES: Feature[] = [
-  { title: "Download your card", text: "Save the finished card to keep or share anywhere." },
+  { title: "Download your card", text: "Save the finished card as a PDF to keep or share." },
   { title: "No ads", text: "Your guests see only your card, nothing else." },
   { title: "No watermark", text: "A clean card with nothing added to it." },
 ];
@@ -30,15 +37,19 @@ type Props = {
   features?: Feature[];
   delayMs?: number;
   brandName?: string;
+  /** Called when the (paid) user clicks Download. Wire this to your PDF endpoint. */
+  onDownload?: (cardId: string) => Promise<void> | void;
 };
 
 type Phase = "idle" | "creating" | "paying" | "verifying" | "success";
 
-/* Brand classes live here so you can retune them in one place. */
-const btnPrimary =
-  "inline-flex h-12 w-full items-center justify-center gap-2 bg-brand-deep px-6 text-sm font-medium tracking-wide text-white transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-deep disabled:cursor-not-allowed disabled:opacity-60";
-const btnGhost =
-  "mt-2 h-11 w-full text-sm text-brand-deep/70 underline-offset-4 transition hover:text-brand-deep hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-deep";
+/* ---- brand classes: retune the look here ---- */
+const focusRing =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-deep";
+const btnPrimary = `inline-flex h-12 w-full items-center justify-center gap-2 bg-brand-deep px-6 text-sm font-medium tracking-wide text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
+const btnGhost = `mt-2 h-11 w-full text-sm text-brand-deep/70 underline-offset-4 transition hover:text-brand-deep hover:underline ${focusRing}`;
+const panelFilled = `flex h-14 w-full items-center justify-between gap-3 bg-brand-deep px-5 text-left text-white transition hover:opacity-90 disabled:opacity-70 ${focusRing}`;
+const panelOutline = `flex h-14 w-full items-center justify-between gap-3 border border-brand-deep/40 px-5 text-left text-brand-deep transition hover:border-brand-deep ${focusRing}`;
 
 const dismissKey = (id: string) => `card-pay-popup:${id}`;
 const wasDismissed = (id: string) => {
@@ -52,7 +63,7 @@ const markDismissed = (id: string) => {
   try {
     sessionStorage.setItem(dismissKey(id), "1");
   } catch {
-    /* storage unavailable: popup may show again, which is fine */
+    /* storage unavailable: the popup may show again, which is fine */
   }
 };
 
@@ -61,23 +72,41 @@ function themeColor() {
   return v || "#1b2133";
 }
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  const e = error as { status?: number | string; data?: { message?: string; detail?: unknown } } | undefined;
-  if (e?.data?.message) return e.data.message;
-  if (typeof e?.data?.detail === "string") return e.data.detail;
-  if (e?.status === 401) return "Please sign in again to continue.";
-  if (e?.status === "FETCH_ERROR") return "Check your internet connection and try again.";
-  return "Something went wrong. Please try again.";
-}
+const getErrorMessage = (error: unknown) => getApiErrorMessage(error);
 
-const Check = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className="mt-0.5 shrink-0 text-brand-deep">
+/** paise -> "₹499" or "₹499.50" */
+const formatMoney = (paise: number, currency = "INR") =>
+  new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: paise % 100 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(paise / 100);
+
+/* ---------------- icons ---------------- */
+const Check = ({ className = "" }: { className?: string }) => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true" className={`shrink-0 ${className}`}>
     <circle cx="10" cy="10" r="9" stroke="currentColor" strokeWidth="1.2" />
     <path d="m6 10.3 2.8 2.8L14 7.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
-
+const Lock = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <rect x="4.5" y="9" width="11" height="8" rx="1" />
+    <path d="M7 9V6.5a3 3 0 0 1 6 0V9" />
+  </svg>
+);
+const DownloadIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <path d="M10 3v10m0 0-3.5-3.5M10 13l3.5-3.5M4 16.5h12" />
+  </svg>
+);
+const Info = () => (
+  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true" className="mt-px shrink-0">
+    <circle cx="10" cy="10" r="8.5" />
+    <path d="M10 9v5M10 6.2v.1" />
+  </svg>
+);
 const Spinner = () => (
   <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
     <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity=".25" />
@@ -90,37 +119,55 @@ export default function CardPaymentGate({
   features = DEFAULT_FEATURES,
   delayMs = 5000,
   brandName = "Wedding Cards",
+  onDownload,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const couponId = useId();
   const primaryRef = useRef<HTMLButtonElement>(null);
 
   const { data } = useGetCardQuery(cardId);
   const loaded = Boolean(data?.data?.card);
-  const isPaid = Boolean(data?.data?.card?.isPaid);
 
   const [createOrder] = useCreatePaymentOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
+  const [fetchQuote] = useLazyGetPaymentQuoteQuery();
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   /** Set when Razorpay took the money but our verify call failed, so we never ask to pay twice. */
   const [pending, setPending] = useState<RazorpaySuccess | null>(null);
+  const [justPaid, setJustPaid] = useState(false);
 
+  // coupon
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [applied, setApplied] = useState<{ code: string; quote: PaymentQuote } | null>(null);
+
+  // download
+  const [downloading, setDownloading] = useState(false);
+  const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+
+  const paid = Boolean(data?.data?.card?.isPaid) || justPaid;
   const busy = phase === "creating" || phase === "paying" || phase === "verifying";
+
+  const { data: baseQuoteRes } = useGetPaymentQuoteQuery({ cardId }, { skip: !loaded || paid });
+  const quote: PaymentQuote | undefined = applied?.quote ?? baseQuoteRes?.data;
 
   /* Open the popup N seconds after the card details arrive. */
   useEffect(() => {
-    if (!loaded || isPaid || wasDismissed(cardId)) return;
+    if (!loaded || paid || wasDismissed(cardId)) return;
     const id = window.setTimeout(() => setOpen(true), delayMs);
     return () => window.clearTimeout(id);
-  }, [loaded, isPaid, cardId, delayMs]);
+  }, [loaded, paid, cardId, delayMs]);
 
   /* Warm up checkout.js while the user reads the popup. */
   useEffect(() => {
-    if (loaded && !isPaid) loadRazorpay().catch(() => {});
-  }, [loaded, isPaid]);
+    if (loaded && !paid) loadRazorpay().catch(() => {});
+  }, [loaded, paid]);
 
   const close = useCallback(() => {
     if (busy) return;
@@ -154,6 +201,31 @@ export default function CardPaymentGate({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, close]);
 
+  /* ---------------- coupon ---------------- */
+  const applyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError("Enter a coupon code.");
+      return;
+    }
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      const res = await fetchQuote({ cardId, couponCode: code }).unwrap();
+      if (res.data) setApplied({ code: res.data.couponCode ?? code, quote: res.data });
+    } catch (e) {
+      setCouponError(getErrorMessage(e));
+    } finally {
+      setCouponBusy(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setApplied(null);
+    setCouponInput("");
+    setCouponError(null);
+  };
+
   /* ---------------- payment flow ---------------- */
   const confirm = async (resp: RazorpaySuccess) => {
     setError(null);
@@ -163,6 +235,7 @@ export default function CardPaymentGate({
     try {
       await verifyPayment(resp).unwrap();
       setPending(null);
+      setJustPaid(true);
       setPhase("success");
     } catch (e) {
       setError(getErrorMessage(e));
@@ -174,9 +247,18 @@ export default function CardPaymentGate({
     setError(null);
     setPhase("creating");
     try {
-      const [order] = await Promise.all([createOrder({ cardId }).unwrap(), loadRazorpay()]);
+      const order = await createOrder({ cardId, couponCode: applied?.code }).unwrap();
       const o = order.data;
-      if (!o?.orderId || !window.Razorpay) throw new Error("Couldn't start the payment. Please try again.");
+
+      // Free template or a 100% coupon: the backend already unlocked the card.
+      if (o?.free) {
+        setJustPaid(true);
+        setPhase("success");
+        return;
+      }
+
+      await loadRazorpay();
+      if (!o?.orderId || !o.keyId || !window.Razorpay) throw new Error("Couldn't start the payment. Please try again.");
 
       const rzp = new window.Razorpay({
         key: o.keyId,
@@ -203,26 +285,96 @@ export default function CardPaymentGate({
     }
   };
 
-  if (!loaded || (isPaid && phase !== "success")) return null;
+  /* ---------------- download ---------------- */
+  const handleDownload = async () => {
+    if (!paid) {
+      setOpen(true); // locked: explain and offer to pay
+      return;
+    }
+    setDownloadMsg(null);
+    if (!onDownload) {
+      setDownloadMsg("PDF download is being set up. Please check back soon.");
+      return;
+    }
+    setDownloading(true);
+    try {
+      await onDownload(cardId);
+    } catch (e) {
+      setDownloadMsg(getErrorMessage(e));
+    } finally {
+      setDownloading(false);
+    }
+  };
 
+  if (!loaded) return null;
+
+  const currency = quote?.currency ?? "INR";
+  const money = (p: number) => formatMoney(p, currency);
+  const hasDiscount = (quote?.discountAmount ?? 0) > 0;
   const onPrimary = () => (pending ? void confirm(pending) : void startPayment());
-  const primaryLabel = pending ? "Retry confirmation" : "Pay now";
+
+  const primaryLabel =
+    phase === "creating"
+      ? "Preparing payment"
+      : phase === "paying"
+        ? "Complete the payment"
+        : pending
+          ? "Retry confirmation"
+          : quote?.isFree
+            ? "Unlock for free"
+            : quote
+              ? `Pay ${money(quote.amount)}`
+              : "Pay now";
 
   return (
     <>
-      {/* Floating button, shown whenever the popup is closed */}
-      {!open && !isPaid && (
-        <button
-          type="button"
-          onClick={() => (pending ? setOpen(true) : void startPayment())}
-          disabled={busy}
-          className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-[900] inline-flex h-11 items-center gap-2 rounded-full bg-brand-deep px-5 text-sm font-medium text-white shadow-lg ring-1 ring-white/20 transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-deep disabled:opacity-70"
-        >
-          {busy && <Spinner />}
-          {pending ? "Confirm payment" : busy ? "Please wait" : "Pay now"}
-        </button>
-      )}
+      {/* ------------ Panel: right of the card on lg+, below the card on smaller screens ------------ */}
+      <section
+        aria-label="Card actions"
+        className="relative z-10 mx-auto my-8 w-[min(92vw,26rem)] border border-brand-deep/15 bg-brand-cream p-5 text-brand-deep shadow-xl lg:fixed lg:right-6 lg:top-1/2 lg:z-[900] lg:my-0 lg:w-64 lg:-translate-y-1/2"
+      >
+        <p className="text-xs uppercase tracking-[0.22em] text-brand-deep/60">Your card</p>
+        <p className="mt-1 font-serif text-xl leading-snug">{paid ? "Unlocked and ready" : "Unlock to download"}</p>
 
+        <div className="mt-4 space-y-3">
+          {paid ? (
+            <button type="button" disabled className="flex h-14 w-full cursor-default items-center justify-center gap-2 border border-brand-deep/40 text-brand-deep">
+              <Check />
+              <span className="font-medium">Paid</span>
+            </button>
+          ) : (
+            <button type="button" onClick={() => setOpen(true)} className={panelFilled}>
+              <span className="font-medium">{pending ? "Confirm payment" : "Pay now"}</span>
+              {quote && !pending && (
+                <span className="flex items-baseline gap-2">
+                  {hasDiscount && <s className="text-xs opacity-60">{money(quote.originalAmount)}</s>}
+                  <span className="font-serif text-xl">{quote.isFree ? "Free" : money(quote.amount)}</span>
+                </span>
+              )}
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => void handleDownload()}
+            disabled={downloading}
+            aria-disabled={!paid}
+            className={`${paid ? panelFilled : `${panelOutline} text-brand-deep/70 hover:text-brand-deep`}`}
+          >
+            <span className="font-medium">{downloading ? "Preparing PDF" : "Download PDF"}</span>
+            {downloading ? <Spinner /> : paid ? <DownloadIcon /> : <Lock />}
+          </button>
+        </div>
+
+        {downloadMsg && (
+          <p role="status" className="mt-3 text-xs leading-relaxed text-brand-deep/75">
+            {downloadMsg}
+          </p>
+        )}
+        <p className="mt-3 text-xs leading-relaxed text-brand-deep/60">The PDF is a still copy with no animation.</p>
+      </section>
+
+      {/* ------------ Dialog ------------ */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -250,7 +402,7 @@ export default function CardPaymentGate({
                   type="button"
                   onClick={close}
                   aria-label="Close"
-                  className="absolute right-3 top-3 grid h-9 w-9 place-items-center text-brand-deep/60 transition hover:text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-deep"
+                  className={`absolute right-3 top-3 grid h-9 w-9 place-items-center text-brand-deep/60 transition hover:text-brand-deep ${focusRing}`}
                 >
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
                     <path d="m3 3 10 10M13 3 3 13" />
@@ -266,10 +418,10 @@ export default function CardPaymentGate({
                     </svg>
                   </div>
                   <h2 id={titleId} className="mt-5 font-serif text-3xl leading-tight">
-                    Payment successful
+                    {quote?.isFree ? "Card unlocked" : "Payment successful"}
                   </h2>
                   <p className="mt-3 text-sm leading-relaxed text-brand-deep/75">
-                    Your card is unlocked. The ads and watermark are gone, and you can download it now.
+                    Your card is unlocked. The ads and watermark are gone, and you can download the PDF now.
                   </p>
                   <button ref={primaryRef} type="button" onClick={close} className={`${btnPrimary} mt-7`}>
                     Done
@@ -301,17 +453,107 @@ export default function CardPaymentGate({
                   </p>
 
                   {!pending && (
-                    <ul className="mt-6 space-y-4">
-                      {features.map((f) => (
-                        <li key={f.title} className="flex gap-3">
-                          <Check />
-                          <div>
-                            <p className="font-medium">{f.title}</p>
-                            <p className="text-sm text-brand-deep/70">{f.text}</p>
+                    <>
+                      <ul className="mt-6 space-y-4">
+                        {features.map((f) => (
+                          <li key={f.title} className="flex gap-3">
+                            <Check className="mt-0.5 text-brand-deep" />
+                            <div>
+                              <p className="font-medium">{f.title}</p>
+                              <p className="text-sm text-brand-deep/70">{f.text}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+
+                      {/* Coupon */}
+                      <div className="mt-6 border-t border-brand-deep/15 pt-4">
+                        {applied ? (
+                          <div className="flex items-center justify-between gap-3 text-sm">
+                            <p className="flex items-center gap-2">
+                              <Check className="h-4 w-4" />
+                              <span>
+                                <span className="font-medium tracking-wide">{applied.code}</span> applied
+                              </span>
+                            </p>
+                            <button type="button" onClick={removeCoupon} disabled={busy} className={`text-brand-deep/70 underline underline-offset-4 hover:text-brand-deep ${focusRing}`}>
+                              Remove
+                            </button>
                           </div>
-                        </li>
-                      ))}
-                    </ul>
+                        ) : couponOpen ? (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              void applyCoupon();
+                            }}
+                          >
+                            <label htmlFor={couponId} className="sr-only">
+                              Coupon code
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                id={couponId}
+                                value={couponInput}
+                                onChange={(e) => setCouponInput(e.target.value)}
+                                placeholder="Coupon code"
+                                autoComplete="off"
+                                autoCapitalize="characters"
+                                autoFocus
+                                maxLength={40}
+                                aria-invalid={Boolean(couponError)}
+                                aria-describedby={couponError ? `${couponId}-err` : undefined}
+                                className={`h-11 min-w-0 flex-1 border border-brand-deep/30 bg-white/60 px-3 text-sm uppercase tracking-wider placeholder:normal-case placeholder:tracking-normal placeholder:text-brand-deep/45 ${focusRing}`}
+                              />
+                              <button
+                                type="submit"
+                                disabled={couponBusy || busy}
+                                className={`inline-flex h-11 items-center gap-2 border border-brand-deep px-4 text-sm font-medium transition hover:bg-brand-deep hover:text-white disabled:opacity-60 ${focusRing}`}
+                              >
+                                {couponBusy && <Spinner />}
+                                Apply
+                              </button>
+                            </div>
+                            {couponError && (
+                              <p id={`${couponId}-err`} role="alert" className="mt-2 text-sm text-red-800">
+                                {couponError}
+                              </p>
+                            )}
+                          </form>
+                        ) : (
+                          <button type="button" onClick={() => setCouponOpen(true)} className={`text-sm text-brand-deep underline underline-offset-4 ${focusRing}`}>
+                            Have a coupon code?
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Price summary */}
+                      {quote && (
+                        <dl className="mt-4 space-y-2 text-sm">
+                          {hasDiscount && (
+                            <>
+                              <div className="flex justify-between text-brand-deep/70">
+                                <dt>Card price</dt>
+                                <dd>{money(quote.originalAmount)}</dd>
+                              </div>
+                              <div className="flex justify-between text-brand-deep/70">
+                                <dt>Coupon {quote.couponCode}</dt>
+                                <dd>−{money(quote.discountAmount)}</dd>
+                              </div>
+                            </>
+                          )}
+                          <div className="flex items-baseline justify-between">
+                            <dt className="font-medium">Total</dt>
+                            <dd className="font-serif text-2xl">{quote.isFree ? "Free" : money(quote.amount)}</dd>
+                          </div>
+                        </dl>
+                      )}
+
+                      {/* PDF disclaimer */}
+                      <p className="mt-5 flex gap-2 border border-brand-deep/15 bg-brand-deep/[0.04] px-3 py-2 text-xs leading-relaxed text-brand-deep/75">
+                        <Info />
+                        <span>The downloaded card is a PDF. It doesn&apos;t include any animation or the page-turning effect.</span>
+                      </p>
+                    </>
                   )}
 
                   {error && (
@@ -320,9 +562,9 @@ export default function CardPaymentGate({
                     </p>
                   )}
 
-                  <button ref={primaryRef} type="button" onClick={onPrimary} disabled={busy} className={`${btnPrimary} mt-7`}>
+                  <button ref={primaryRef} type="button" onClick={onPrimary} disabled={busy} className={`${btnPrimary} mt-6`}>
                     {busy && <Spinner />}
-                    {phase === "creating" ? "Preparing payment" : phase === "paying" ? "Complete the payment" : primaryLabel}
+                    {primaryLabel}
                   </button>
                   {!pending && (
                     <button type="button" onClick={close} disabled={busy} className={btnGhost}>

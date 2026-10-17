@@ -6,7 +6,8 @@ from . import (
     authrouter,
     dashboardRouter,
     adminTemplateRouter,
-    paymentRouter
+    paymentRouter,
+    adminCouponRouter
 )
 
 router = APIRouter()
@@ -17,3 +18,4 @@ router.include_router(authrouter)
 router.include_router(dashboardRouter)
 router.include_router(adminTemplateRouter)
 router.include_router(paymentRouter)
+router.include_router(adminCouponRouter)

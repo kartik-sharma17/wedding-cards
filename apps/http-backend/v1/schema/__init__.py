@@ -7,6 +7,7 @@ from .cardSchema import (
     UpdateCardSchema,
 )
 from .paymentSchema import VerifyPaymentSchema, CreateOrderSchema
+from .couponSchema import CreateCouponSchema, UpdateCouponSchema
 
 __all__ = [
     "EventSchedule",
@@ -15,5 +16,7 @@ __all__ = [
     "UpdateCardSchema",
     "AuthMe",
     "VerifyPaymentSchema",
-    "CreateOrderSchema"
+    "CreateOrderSchema",
+    "CreateCouponSchema",
+    "UpdateCouponSchema"
 ]

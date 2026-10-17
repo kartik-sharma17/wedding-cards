@@ -4,6 +4,7 @@ from .cardRouter import cardRouter
 from .dashboardRouter import dashboardRouter
 from .adminTemplateRouter import adminTemplateRouter
 from .paymentRouter import paymentRouter
+from .couponRouter import adminCouponRouter
 
 __all__ = [
     "authrouter",
@@ -11,5 +12,6 @@ __all__ = [
     "cardRouter",
     "dashboardRouter",
     "adminTemplateRouter",
-    "paymentRouter"
+    "paymentRouter",
+    "adminCouponRouter"
 ]

@@ -17,6 +17,11 @@ function Screen({ title, text, children }: { title: string; text?: string; child
   );
 }
 
+const NAV_ITEMS = [
+  { href: "/admin/templates", label: "Templates" },
+  { href: "/admin/coupons", label: "Coupons" },
+];
+
 const linkBtn = "border border-brand-deep px-6 py-3 text-sm text-brand-deep transition-colors hover:bg-brand-deep hover:text-white";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
@@ -82,14 +87,20 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <span className="font-script text-3xl text-brand-deep">Shaan</span>
             <span className="bg-brand-gold/25 px-2 py-0.5 text-xs tracking-wide text-brand-deep uppercase">Admin</span>
           </Link>
-          <nav aria-label="Admin" className="flex-1">
-            <Link
-              href="/admin/templates"
-              aria-current={pathname.startsWith("/admin/templates") ? "page" : undefined}
-              className={`border-b-2 py-5 text-sm ${pathname.startsWith("/admin/templates") ? "border-brand-gold text-brand-deep" : "border-transparent text-brand-deep/60 hover:text-brand-deep"}`}
-            >
-              Templates
-            </Link>
+          <nav aria-label="Admin" className="flex flex-1 gap-6">
+            {NAV_ITEMS.map(({ href, label }) => {
+              const active = pathname.startsWith(href);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={`border-b-2 py-5 text-sm ${active ? "border-brand-gold text-brand-deep" : "border-transparent text-brand-deep/60 hover:text-brand-deep"}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
           </nav>
           <span className="hidden text-sm text-muted-foreground sm:block">{data.data.name}</span>
           <Link href="/" className="text-sm text-brand-deep/70 hover:text-brand-deep">

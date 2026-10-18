@@ -46,18 +46,6 @@ function CardFromApi({ cardId }: { cardId: string }) {
   return mapped?.view ? <WeddingTemplate1 data={mapped.view} /> : <Shell><Skeleton /></Shell>;
 }
 
-/* ---------------- small helpers ---------------- */
-function errorMessage(error: unknown): string {
-  const e = error as { status?: number | string; data?: { message?: string; detail?: string } } | undefined;
-  const fromServer = e?.data?.message || e?.data?.detail;
-  if (fromServer) return fromServer;
-  if (e?.status === 401) return "Please sign in to view this card.";
-  if (e?.status === 403) return "You don't have access to this card.";
-  if (e?.status === 404) return "This card doesn't exist or the link is wrong.";
-  if (e?.status === "FETCH_ERROR") return "Check your internet connection and try again.";
-  return "Something went wrong while fetching the card details. Try again.";
-}
-
 const shell: React.CSSProperties = {
   minHeight: "100dvh",
   display: "grid",

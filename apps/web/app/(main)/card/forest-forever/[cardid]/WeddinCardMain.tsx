@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import WeddingTemplate1 from "./Weddingtemplate1";
-import { DEMO_WEDDING, mapCardToWeddingView, type CardDetailsApi } from "./ Weddingcard";
+import { DEMO_WEDDING, mapCardToWeddingView, type CardDetailsApi } from "./Weddingcard";
 import { useGetCardQuery } from "@/redux/service/cardService";
 import { getApiErrorMessage } from "@/lib/apiError";
 

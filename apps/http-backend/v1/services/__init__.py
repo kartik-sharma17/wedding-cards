@@ -4,6 +4,7 @@ from .dashboardservice import dashboard_service
 from .adminTemplateService import admin_template_service
 from .paymentService import payment_service
 from .couponService import admin_coupon_service
+from .pdfService import pdf_service
 
 __all__ = [
     "auth_service",

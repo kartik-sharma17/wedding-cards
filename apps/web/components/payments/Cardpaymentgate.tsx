@@ -6,13 +6,14 @@ import { EASE } from "@/lib/motion";
 import { getApiErrorMessage } from "@/lib/apiError";
 import { loadRazorpay, type RazorpaySuccess } from "@/lib/razorpay";
 import { useGetCardQuery } from "@/redux/service/cardService";
+import { useCreateCardPdfMutation } from "@/redux/service/pdfService";
 import {
   useCreatePaymentOrderMutation,
   useGetPaymentQuoteQuery,
   useLazyGetPaymentQuoteQuery,
   useVerifyPaymentMutation,
   type PaymentQuote,
-} from "@/redux/service/paymentservice";
+} from "@/redux/service/paymentService";
 
 /**
  * Shared "unlock this card" UI, mounted once in the card layout so every template gets it.
@@ -132,6 +133,7 @@ export default function CardPaymentGate({
   const [createOrder] = useCreatePaymentOrderMutation();
   const [verifyPayment] = useVerifyPaymentMutation();
   const [fetchQuote] = useLazyGetPaymentQuoteQuery();
+  const [createPdf] = useCreateCardPdfMutation();
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -286,19 +288,24 @@ export default function CardPaymentGate({
   };
 
   /* ---------------- download ---------------- */
+  // 1) the server makes (or reuses) the PDF, 2) the browser follows a short-lived signed link,
+  // so the file downloads natively (this also works in in-app browsers).
+  const defaultDownload = async (id: string) => {
+    const res = await createPdf(id).unwrap();
+    const path = res.data?.downloadPath;
+    if (!path) throw new Error("The PDF isn't ready yet. Please try again.");
+    window.location.assign(`${process.env.NEXT_PUBLIC_API_URL ?? ""}${path}`);
+  };
+
   const handleDownload = async () => {
     if (!paid) {
       setOpen(true); // locked: explain and offer to pay
       return;
     }
     setDownloadMsg(null);
-    if (!onDownload) {
-      setDownloadMsg("PDF download is being set up. Please check back soon.");
-      return;
-    }
     setDownloading(true);
     try {
-      await onDownload(cardId);
+      await (onDownload ?? defaultDownload)(cardId);
     } catch (e) {
       setDownloadMsg(getErrorMessage(e));
     } finally {

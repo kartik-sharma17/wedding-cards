@@ -27,4 +27,11 @@ class Settings:
     RAZOR_PAY_API_KEY: str = os.getenv("RAZOR_PAY_API_KEY")
     RAZOR_PAY_SECRET: str = os.getenv("RAZOR_PAY_SECRET")
 
+    PDF_TOKEN_SECRET: str = os.getenv("PDF_TOKEN_SECRET")
+    PDF_FRONTEND_URL: str = os.getenv("PDF_FRONTEND_URL")
+    CACHE_DIR: str = os.getenv("CACHE_DIR")
+    PDF_MAX_CONCURRENCY: int = os.getenv("PDF_MAX_CONCURRENCY")
+    PDF_RENDER_VERSION: int = os.getenv("PDF_RENDER_VERSION")
+    PDF_CHROME_CHANNEL: int = os.getenv("PDF_CHROME_CHANNEL")
+
 settings = Settings()

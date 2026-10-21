@@ -8,7 +8,8 @@ from . import (
     adminTemplateRouter,
     paymentRouter,
     adminCouponRouter,
-    pdfRouter
+    pdfRouter,
+    publicRouter
 )
 
 router = APIRouter()
@@ -21,3 +22,4 @@ router.include_router(adminTemplateRouter)
 router.include_router(paymentRouter)
 router.include_router(adminCouponRouter)
 router.include_router(pdfRouter)
+router.include_router(publicRouter)

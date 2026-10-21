@@ -34,6 +34,8 @@ const DEFAULT_FEATURES: Feature[] = [
 ];
 
 type Props = {
+  /** Folder name of the template (e.g. "forest-forever"); used to build the share link. */
+  templateSlug?: string;
   cardId: string;
   features?: Feature[];
   delayMs?: number;
@@ -102,6 +104,20 @@ const DownloadIcon = () => (
     <path d="M10 3v10m0 0-3.5-3.5M10 13l3.5-3.5M4 16.5h12" />
   </svg>
 );
+const CopyIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <rect x="7" y="7" width="9.5" height="9.5" rx="1.2" />
+    <path d="M13 7V4.7A1.2 1.2 0 0 0 11.8 3.5H4.7A1.2 1.2 0 0 0 3.5 4.7v7.1A1.2 1.2 0 0 0 4.7 13H7" />
+  </svg>
+);
+const ShareIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <circle cx="15" cy="4.5" r="2" />
+    <circle cx="5" cy="10" r="2" />
+    <circle cx="15" cy="15.5" r="2" />
+    <path d="m6.8 9 6.4-3.5M6.8 11l6.4 3.5" />
+  </svg>
+);
 const Info = () => (
   <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden="true" className="mt-px shrink-0">
     <circle cx="10" cy="10" r="8.5" />
@@ -120,6 +136,7 @@ export default function CardPaymentGate({
   features = DEFAULT_FEATURES,
   delayMs = 5000,
   brandName = "Wedding Cards",
+  templateSlug,
   onDownload,
 }: Props) {
   const reduceMotion = useReducedMotion();
@@ -152,6 +169,8 @@ export default function CardPaymentGate({
   // download
   const [downloading, setDownloading] = useState(false);
   const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const paid = Boolean(data?.data?.card?.isPaid) || justPaid;
   const busy = phase === "creating" || phase === "paying" || phase === "verifying";
@@ -287,6 +306,35 @@ export default function CardPaymentGate({
     }
   };
 
+  /* ---------------- share ---------------- */
+  const publicSlug = data?.data?.card?.publicSlug;
+  const shareUrl = () => `${window.location.origin}/card/${templateSlug}/${publicSlug}/share`;
+
+  const copyLink = async () => {
+    if (!templateSlug || !publicSlug) return;
+    const url = shareUrl();
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setShareMsg(`Link copied: ${url}`);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setShareMsg(`Copy this link: ${url}`); // clipboard blocked: show it so it can be copied by hand
+    }
+  };
+
+  // The system share sheet (Messages, WhatsApp, AirDrop...). Handy on phones; Copy link is the main action.
+  const canNativeShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const nativeShare = async () => {
+    if (!templateSlug || !publicSlug) return;
+    try {
+      await navigator.share({ title: "You're invited", url: shareUrl() });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return; // the user closed the sheet
+      void copyLink();
+    }
+  };
+
   /* ---------------- download ---------------- */
   // 1) the server makes (or reuses) the PDF, 2) the browser follows a short-lived signed link,
   // so the file downloads natively (this also works in in-app browsers).
@@ -294,7 +342,9 @@ export default function CardPaymentGate({
     const res = await createPdf(id).unwrap();
     const path = res.data?.downloadPath;
     if (!path) throw new Error("The PDF isn't ready yet. Please try again.");
-    window.location.assign(`${process.env.NEXT_PUBLIC_API_URL ?? ""}${path}`);
+    const base = process.env.NEXT_PUBLIC_API_URL;
+    if (!base) throw new Error("NEXT_PUBLIC_API_URL is not set, so the download link can't be built.");
+    window.location.assign(`${base.replace(/\/$/, "")}${path}`);
   };
 
   const handleDownload = async () => {
@@ -371,8 +421,33 @@ export default function CardPaymentGate({
             <span className="font-medium">{downloading ? "Preparing PDF" : "Download PDF"}</span>
             {downloading ? <Spinner /> : paid ? <DownloadIcon /> : <Lock />}
           </button>
+
+          {templateSlug && publicSlug && (
+            <div className="flex gap-2">
+              <button type="button" onClick={() => void copyLink()} className={`${panelOutline} min-w-0 flex-1`}>
+                <span className="font-medium">{copied ? "Copied" : "Copy link"}</span>
+                {copied ? <Check /> : <CopyIcon />}
+              </button>
+              {canNativeShare && (
+                <button
+                  type="button"
+                  onClick={() => void nativeShare()}
+                  aria-label="Share the link"
+                  title="Share"
+                  className={`flex h-14 w-14 shrink-0 items-center justify-center border border-brand-deep/40 text-brand-deep transition hover:border-brand-deep ${focusRing}`}
+                >
+                  <ShareIcon />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
+        {shareMsg && (
+          <p role="status" className="mt-3 break-all text-xs leading-relaxed text-brand-deep/75">
+            {shareMsg}
+          </p>
+        )}
         {downloadMsg && (
           <p role="status" className="mt-3 text-xs leading-relaxed text-brand-deep/75">
             {downloadMsg}

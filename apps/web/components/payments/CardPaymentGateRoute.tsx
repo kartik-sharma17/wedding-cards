@@ -7,7 +7,11 @@ import CardPaymentGate from "./Cardpaymentgate";
 export default function CardPaymentGateRoute() {
   const { cardId } = useParams<{ cardId?: string }>();
   const pathname = usePathname();
-  if (pathname.endsWith("/print")) return null; // the PDF page must never show the payment UI
+
+  // The PDF page and the guest share page must never show the owner's payment UI.
+  if (pathname.endsWith("/print") || pathname.endsWith("/share")) return null;
   if (!cardId) return null; // pages without a card id (e.g. /card/baby-bloom) show nothing
-  return <CardPaymentGate cardId={cardId} />;
+
+  const templateSlug = pathname.split("/").filter(Boolean)[1]; // /card/<templateSlug>/<cardId>
+  return <CardPaymentGate cardId={cardId} templateSlug={templateSlug} />;
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import type { TemplateDefinition } from "./Types";
+import type { TemplateDefinition } from "./types";
 import { CONTENT_CSS } from "./shellCss";
 
 const STRINGS = {
@@ -10,7 +10,7 @@ const STRINGS = {
     prev: "Previous page",
     next: "Next page",
     guestView: "Guest view",
-    close: "Close",
+    close: "Exit",
     hint: "Tap the card edges, swipe, or use the arrow keys to turn the page",
     demo: "Sample card",
   },
@@ -21,19 +21,21 @@ type Props<T> = {
   data: T;
   lang?: string;
   isDemo?: boolean;
+  /** Open straight into the full-page guest view (used by the share link). Guests can exit it. */
+  startInGuest?: boolean;
 };
 
 /**
  * The interactive card: page turning, swipe/keys, guest (full page) view.
  * It knows NOTHING about weddings or any template. It just asks the definition for each page.
  */
-export default function FlipBook<T>({ definition, data, lang = "en", isDemo = false }: Props<T>) {
+export default function FlipBook<T>({ definition, data, lang = "en", isDemo = false, startInGuest = false }: Props<T>) {
   const t = STRINGS[lang as keyof typeof STRINGS] ?? STRINGS.en;
   const { pages, Decor, defs, size } = definition;
   const total = pages.length;
 
   const [index, setIndex] = useState(0);
-  const [guest, setGuest] = useState(false);
+  const [guest, setGuest] = useState(startInGuest);
   const bookRef = useRef<HTMLDivElement>(null);
   const pointerStart = useRef<{ x: number; y: number } | null>(null);
 

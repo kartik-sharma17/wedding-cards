@@ -25,7 +25,7 @@ async function PrintContent({ params, searchParams }: { params: Params; searchPa
   const token = Array.isArray(t) ? t[0] : t;
 
   // Server-side address of the FastAPI app, e.g. http://localhost:8000/api/v1
-  const api = process.env.API_BASE_URL;
+  const api = process.env.NEXT_PUBLIC_BASE_URL;
   if (!api || !token) notFound();
 
   const res = await fetch(`${api}/pdf/print-data/${encodeURIComponent(cardId)}?t=${encodeURIComponent(token)}`, { cache: "no-store" });

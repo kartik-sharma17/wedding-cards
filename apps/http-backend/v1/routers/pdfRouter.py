@@ -1,3 +1,4 @@
+# v1/routers/pdfRouter.py
 from fastapi import APIRouter, Depends, Query
 
 from v1.dependencies import verifyUserDependency
@@ -14,8 +15,3 @@ async def createCardPdf(cardId: str, user: dict = Depends(verifyUserDependency))
 @pdfRouter.get("/print-data/{cardId}", summary="Card data for the print page (needs a print token)")
 async def printData(cardId: str, t: str = Query(min_length=1)):
     return await pdf_service.printData(cardId, t)
-
-
-@pdfRouter.get("/download", summary="Download a generated PDF (needs a download token)")
-def download(t: str = Query(min_length=1)):
-    return pdf_service.download(t)

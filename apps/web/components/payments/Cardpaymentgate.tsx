@@ -336,15 +336,13 @@ export default function CardPaymentGate({
   };
 
   /* ---------------- download ---------------- */
-  // 1) the server makes (or reuses) the PDF, 2) the browser follows a short-lived signed link,
-  // so the file downloads natively (this also works in in-app browsers).
+  // 1) the server makes (or reuses) the PDF in storage, 2) the browser follows a short-lived signed link
+  // to it, so the file downloads natively (this also works in in-app browsers).
   const defaultDownload = async (id: string) => {
     const res = await createPdf(id).unwrap();
-    const path = res.data?.downloadPath;
-    if (!path) throw new Error("The PDF isn't ready yet. Please try again.");
-    const base = process.env.NEXT_PUBLIC_API_URL;
-    if (!base) throw new Error("NEXT_PUBLIC_API_URL is not set, so the download link can't be built.");
-    window.location.assign(`${base.replace(/\/$/, "")}${path}`);
+    const url = res.data?.downloadUrl;
+    if (!url) throw new Error("The PDF isn't ready yet. Please try again.");
+    window.location.assign(url);
   };
 
   const handleDownload = async () => {

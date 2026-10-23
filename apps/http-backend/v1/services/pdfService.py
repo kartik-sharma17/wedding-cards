@@ -4,22 +4,46 @@ import hashlib
 import json
 import logging
 import os
-from pathlib import Path
 
-from fastapi.responses import FileResponse
+from fastapi import HTTPException
 
+from config import settings
 from v1.db.connectDB import getDB
 from v1.utility import response, toObjectId, NotFoundError, ForbiddenError
+from v1.utility.blob.B2storage import (
+    DeleteObjects,
+    GeneratePresignedDownloadUrl,
+    ListObjectKeys,
+    ObjectExists,
+    UploadObject,
+)
 from v1.utility.pdfRenderer import render_pdf
 from v1.utility.pdfTokens import sign_token, verify_token
-from config import settings
 
 logger = logging.getLogger(__name__)
 
-FRONTEND_URL = settings.PDF_FRONTEND_URL if settings.PDF_FRONTEND_URL else "http://localhost:3000"
-CACHE_DIR = Path(settings.CACHE_DIR or ".pdf_cache")
-RENDER_VERSION = settings.PDF_RENDER_VERSION if settings.PDF_RENDER_VERSION else 1
-_slots = asyncio.Semaphore(int(settings.PDF_MAX_CONCURRENCY if settings.PDF_MAX_CONCURRENCY else 2))
+
+def _cfg(name: str, default=None):
+    """Read a value from your settings class, then the environment, then the default."""
+    value = getattr(settings, name, None)
+    if value in (None, ""):
+        value = os.getenv(name)
+    return value if value not in (None, "") else default
+
+
+# Where headless Chrome reaches the Next.js site. In Docker this is NOT localhost
+# (use http://host.docker.internal:3000 for local testing, or your real site address).
+FRONTEND_URL = str(_cfg("PDF_FRONTEND_URL", "http://localhost:3000")).rstrip("/")
+# Bump this after you change a template's design, so old cached PDFs are not reused.
+RENDER_VERSION = str(_cfg("PDF_RENDER_VERSION", "1"))
+# Folder (key prefix) inside the Backblaze bucket.
+STORAGE_PREFIX = str(_cfg("PDF_STORAGE_PREFIX", "pdfs")).strip("/")
+DOWNLOAD_NAME = "invitation-card.pdf"
+DOWNLOAD_LINK_SECONDS = 120
+# Chrome is heavy: only a few PDFs are made at the same time.
+_slots = asyncio.Semaphore(int(_cfg("PDF_MAX_CONCURRENCY", 2)))
+# One lock per PDF: simultaneous clicks on the SAME card wait for each other, so it is made only once.
+_locks: dict[str, asyncio.Lock] = {}
 
 
 class PdfService:
@@ -67,18 +91,36 @@ class PdfService:
             sort_keys=True,
             default=str,
         )
-        key = hashlib.sha256(fingerprint.encode()).hexdigest()[:16]
-        path = CACHE_DIR / f"{cardId}-{key}.pdf"
+        digest = hashlib.sha256(fingerprint.encode()).hexdigest()[:16]
+        folder = f"{STORAGE_PREFIX}/{cardId}/"
+        objectKey = f"{folder}{digest}.pdf"
 
-        if not path.exists():
-            async with _slots:
-                if not path.exists():  # another request may have finished while we waited
-                    printToken = sign_token({"typ": "print", "cardId": cardId}, ttl=180)
-                    pdf = await render_pdf(f"{FRONTEND_URL}/card/{slug}/{cardId}/print?t={printToken}")
-                    await asyncio.to_thread(self._save, path, pdf, cardId)
+        if not await self._exists(objectKey):
+            lock = _locks.setdefault(objectKey, asyncio.Lock())
+            try:
+                async with lock:  # same card: the second click waits, then finds the finished file
+                    if not await self._exists(objectKey):
+                        async with _slots:  # different cards: only a few Chrome renders at once
+                            printToken = sign_token({"typ": "print", "cardId": cardId}, ttl=180)
+                            pdf = await render_pdf(f"{FRONTEND_URL}/card/{slug}/{cardId}/print?t={printToken}")
+                            if not await UploadObject(objectKey, pdf, "application/pdf"):
+                                raise HTTPException(status_code=502, detail="We couldn't save the PDF. Please try again.")
+                            await self._removeOldVersions(folder, keep=objectKey)
+            finally:
+                if not lock.locked():
+                    _locks.pop(objectKey, None)  # keep the dict from growing; the re-check above keeps this safe
 
-        downloadToken = sign_token({"typ": "download", "cardId": cardId, "file": path.name}, ttl=120)
-        return response(message="PDF ready", data={"downloadPath": f"/pdf/download?t={downloadToken}"})
+        # The browser downloads straight from Backblaze through a short-lived signed link.
+        downloadUrl = await GeneratePresignedDownloadUrl(
+            objectKey,
+            expires_in=DOWNLOAD_LINK_SECONDS,
+            filename=DOWNLOAD_NAME,
+            content_type="application/pdf",
+        )
+        if not downloadUrl:
+            raise HTTPException(status_code=502, detail="We couldn't create the download link. Please try again.")
+
+        return response(message="PDF ready", data={"downloadUrl": downloadUrl})
 
     # ------------------------------------------------------------------
     # GET /pdf/print-data/{cardId}?t=  (used only by the Next.js print page)
@@ -97,30 +139,22 @@ class PdfService:
         return response(message="Print data fetched", data={"details": details})
 
     # ------------------------------------------------------------------
-    # GET /pdf/download?t=  (a normal link the browser follows; sends the file as an attachment)
-    # ------------------------------------------------------------------
-    def download(self, token: str):
-        claims = verify_token(token, typ="download")
-        path = CACHE_DIR / Path(claims["file"]).name  # .name strips any folder parts
-        if not path.is_file():
-            raise NotFoundError("This PDF is no longer available. Please try again.")
-        return FileResponse(
-            path,
-            media_type="application/pdf",
-            filename="invitation-card.pdf",
-            headers={"Cache-Control": "private, no-store"},
-        )
-
-    # ------------------------------------------------------------------
     @staticmethod
-    def _save(path: Path, pdf: bytes, cardId: str):
-        CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".tmp")
-        tmp.write_bytes(pdf)
-        tmp.replace(path)  # atomic: a half-written file is never served
-        for old in CACHE_DIR.glob(f"{cardId}-*.pdf"):  # drop older versions of this card's PDF
-            if old != path:
-                old.unlink(missing_ok=True)
+    async def _exists(objectKey: str) -> bool:
+        try:
+            return await ObjectExists(objectKey)
+        except Exception as exc:  # a storage outage must not look like "not generated yet"
+            logger.error("Storage check failed for %s: %r", objectKey, exc)
+            raise HTTPException(status_code=502, detail="Storage isn't available right now. Please try again.")
+
+    @staticmethod
+    async def _removeOldVersions(folder: str, keep: str):
+        """Best effort: drop this card's older PDFs. A failure here never affects the download."""
+        try:
+            old = [k for k in await ListObjectKeys(folder) if k != keep]
+            await DeleteObjects(old)
+        except Exception as exc:
+            logger.warning("Could not remove old PDFs under %s: %r", folder, exc)
 
 
 pdf_service = PdfService()

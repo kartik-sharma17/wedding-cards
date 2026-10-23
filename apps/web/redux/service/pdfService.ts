@@ -2,7 +2,8 @@ import { RootApiService } from "./root";
 import type { ApiResponse } from "./authService";
 
 export type CardPdfResponse = {
-  downloadPath: string;
+  /** A short-lived (about 2 minutes) signed link straight to the PDF in storage. Open it to download. */
+  downloadUrl: string;
 };
 
 export const pdfService = RootApiService.injectEndpoints({

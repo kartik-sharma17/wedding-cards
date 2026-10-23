@@ -44,7 +44,7 @@ export default function LoginForm() {
     try {
       const res = await login({ email: email.trim(), password }).unwrap();
       saveToken(res.data.token);
-      router.replace(getSafeRedirect(searchParams.get("next")));
+      router.push("/dashboard");
     } catch (err) {
       const message = getApiErrorMessage(err);
       setServerError(message);

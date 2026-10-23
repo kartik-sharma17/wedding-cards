@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <header className="border-b border-border bg-white">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-6 lg:px-10">
           <Link href="/admin/templates" className="flex items-baseline gap-2">
-            <span className="font-script text-3xl text-brand-deep">Shaan</span>
+            <span className="font-script text-3xl text-brand-deep">Festa</span>
             <span className="bg-brand-gold/25 px-2 py-0.5 text-xs tracking-wide text-brand-deep uppercase">Admin</span>
           </Link>
           <nav aria-label="Admin" className="flex flex-1 gap-6">

@@ -11,6 +11,8 @@ import { NAV_LEFT, NAV_RIGHT } from "@/lib/constants";
 import { clearToken, getToken } from "@/lib/auth";
 import { EASE } from "@/lib/motion";
 
+const DASHBOARD_PATH = "/dashboard";
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -24,16 +26,24 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => setLoggedIn(Boolean(getToken())), []);
+  // Check on every page change, not just once: the navbar stays mounted while someone logs in or
+  // verifies their email, so a one-time check would keep showing "Log in" until a full reload.
+  useEffect(() => setLoggedIn(Boolean(getToken())), [pathname]);
+
+  // The mobile menu closes whenever the page changes.
+  useEffect(() => setOpen(false), [pathname]);
 
   // The home hero is dark, so the bar starts transparent there. Every other page needs it solid.
   const solid = scrolled || open || pathname !== "/";
   const linkClass = "text-sm tracking-wide transition-opacity hover:opacity-70";
 
+  // On the dashboard the "Dashboard" button would point at the page you are already on, so it becomes "Log out".
+  const onDashboard = pathname === DASHBOARD_PATH || pathname.startsWith(`${DASHBOARD_PATH}/`);
+
   const logout = () => {
     clearToken();
-    setLoggedIn(false);
-    setOpen(false);
+    // A full page load clears everything held in memory (including the previous user's cached data).
+    window.location.assign("/");
   };
 
   return (
@@ -68,7 +78,7 @@ export default function Navbar() {
         {/* Center */}
         <Logo />
 
-        {/* Right */}
+        {/* Right (large screens). The mobile menu below offers the same options. */}
         <div className="flex items-center justify-end gap-8">
           <ul className="hidden items-center gap-8 lg:flex">
             {NAV_RIGHT.map((l) => (
@@ -81,9 +91,15 @@ export default function Navbar() {
           </ul>
           <div className="hidden items-center gap-6 lg:flex">
             {loggedIn ? (
-              <BrandButton href="/dashboard" variant="gold" className="!px-5 !py-2.5">
-                  Dashbaord
+              onDashboard ? (
+                <BrandButton onClick={logout} variant="gold" className="!px-5 !py-2.5">
+                  Log out
                 </BrandButton>
+              ) : (
+                <BrandButton href={DASHBOARD_PATH} variant="gold" className="!px-5 !py-2.5">
+                  Dashboard
+                </BrandButton>
+              )
             ) : (
               <>
                 <Link href="/login" className={linkClass}>
@@ -95,15 +111,10 @@ export default function Navbar() {
               </>
             )}
           </div>
-          {!loggedIn && (
-            <Link href="/login" className={`${linkClass} lg:hidden`}>
-              Log in
-            </Link>
-          )}
         </div>
       </nav>
 
-      {/* Mobile menu */}
+      {/* Mobile menu: the same links and the same account options as the large-screen bar */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -125,15 +136,26 @@ export default function Navbar() {
                   </Link>
                 </li>
               ))}
-              <li className="pt-6">
+              <li className="flex flex-col gap-3 pt-6">
                 {loggedIn ? (
-                  <BrandButton onClick={logout} variant="outline" className="w-full">
-                    Log out
-                  </BrandButton>
+                  onDashboard ? (
+                    <BrandButton onClick={logout} variant="outline" className="w-full">
+                      Log out
+                    </BrandButton>
+                  ) : (
+                    <BrandButton href={DASHBOARD_PATH} variant="deep" className="w-full">
+                      Dashboard
+                    </BrandButton>
+                  )
                 ) : (
-                  <BrandButton href="/register" variant="deep" className="w-full">
-                    Get started
-                  </BrandButton>
+                  <>
+                    <BrandButton href="/login" variant="outline" className="w-full">
+                      Log in
+                    </BrandButton>
+                    <BrandButton href="/register" variant="deep" className="w-full">
+                      Get started
+                    </BrandButton>
+                  </>
                 )}
               </li>
             </ul>

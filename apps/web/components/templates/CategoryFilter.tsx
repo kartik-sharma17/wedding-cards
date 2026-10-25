@@ -1,7 +1,7 @@
 "use client";
 
 import { CATEGORY_OPTIONS } from "@/lib/templates";
-import type { TemplateCategory } from "@/services/templateService";
+import type { TemplateCategory } from "@/redux/service/templateService";
 
 export type CategoryValue = TemplateCategory | "all";
 

@@ -1,4 +1,4 @@
-import { TemplateDefinition } from "@/components/card/Types";
+import { TemplateDefinition } from "@/components/card/types";
 import { parseDate, safeHttpUrl, type WeddingCardView, type WeddingCategory } from "./Weddingcard";
 
 /* ------------------------------------------------------------------ */

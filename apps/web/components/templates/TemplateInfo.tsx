@@ -5,7 +5,7 @@ import { Check, Clock, Video } from "lucide-react";
 import BrandButton from "@/components/ui/BrandButton";
 import { CATEGORY_FIELDS, CATEGORY_LABELS, formatPrice, isFreeTemplate } from "@/lib/templates";
 import { EASE } from "@/lib/motion";
-import type { TemplateSummary } from "@/services/templateService";
+import type { TemplateSummary } from "@/redux/service/templateService";
 
 type Props = { template: TemplateSummary; onCreate: () => void };
 

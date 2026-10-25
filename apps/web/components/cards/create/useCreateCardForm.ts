@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { TemplateCategory } from "@/services/templateService";
+import type { TemplateCategory } from "@/redux/service/templateService";
 import { INITIAL_VALUES, type CardFormValues, type EventRow, type FormErrors } from "./types";
 import { validateStep } from "./validate";
 import { STEP_LABELS } from "./config";

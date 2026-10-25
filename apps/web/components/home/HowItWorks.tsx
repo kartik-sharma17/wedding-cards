@@ -31,7 +31,7 @@ export default function HowItWorks() {
           />
 
           {STEPS.map((step, i) => {
-            const Icon = ICONS[i];
+            const Icon = ICONS[i] ?? LayoutTemplate;
             return (
               <motion.li
                 key={step.title}

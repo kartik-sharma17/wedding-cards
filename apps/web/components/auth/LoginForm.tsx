@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import FormField from "./FormField";
 import FormAlert from "./FormAlert";
@@ -14,7 +14,6 @@ type Errors = { email?: string; password?: string };
 
 export default function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [login, { isLoading }] = useLoginMutation();
   const [resend, { isLoading: isResending }] = useResendVerificationMutation();
 

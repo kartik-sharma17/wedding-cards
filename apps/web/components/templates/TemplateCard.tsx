@@ -7,7 +7,7 @@ import SafeImage from "@/components/ui/SafeImage";
 import { CATEGORY_LABELS, formatPrice, getTemplateImages, isFreeTemplate } from "@/lib/templates";
 import { ROUTES } from "@/lib/routes";
 import { EASE } from "@/lib/motion";
-import type { TemplateSummary } from "@/services/templateService";
+import type { TemplateSummary } from "@/redux/service/templateService";
 
 export default function TemplateCard({ template, index = 0 }: { template: TemplateSummary; index?: number }) {
   const [main, hover] = getTemplateImages(template);

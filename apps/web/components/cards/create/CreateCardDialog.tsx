@@ -88,7 +88,7 @@ export default function CreateCardDialog({ open, onClose, template }: Props) {
         <div ref={bodyRef} data-lenis-prevent className="flex-1 overflow-x-hidden overflow-y-auto border-t border-border px-6 py-6 sm:px-8">
           <AnimatePresence mode="wait" custom={form.direction} initial={false}>
             <motion.div key={form.step} custom={form.direction} variants={slide} initial="enter" animate="center" exit="exit">
-              <StepComponent form={form} category={template.category} />
+              {StepComponent && <StepComponent form={form} category={template.category} />}
             </motion.div>
           </AnimatePresence>
 

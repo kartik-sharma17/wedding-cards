@@ -1,4 +1,4 @@
-import type { TemplateCategory } from "@/services/templateService";
+import type { TemplateCategory } from "@/redux/service/templateService";
 
 export const STEP_LABELS = ["Event", "Organiser", "Venue"] as const;
 

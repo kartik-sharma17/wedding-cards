@@ -3,7 +3,7 @@ import BrandButton from "@/components/ui/BrandButton";
 import TemplateCard from "./TemplateCard";
 import { CATEGORY_LABELS } from "@/lib/templates";
 import { ROUTES } from "@/lib/routes";
-import type { TemplateCategory, TemplateSummary } from "@/services/templateService";
+import type { TemplateCategory, TemplateSummary } from "@/redux/service/templateService";
 
 type Props = { templates: TemplateSummary[]; category: TemplateCategory };
 

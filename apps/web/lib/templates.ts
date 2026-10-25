@@ -1,5 +1,5 @@
-import type { TemplateCategory, TemplateSummary } from "@/services/templateService";
-import type { WeddingCategory } from "@/services/cardService";
+import type { TemplateCategory, TemplateSummary } from "@/redux/service/templateService";
+import type { WeddingCategory } from "@/redux/service/cardService";
 
 export const CATEGORY_LABELS: Record<TemplateCategory, string> = {
   wedding: "Wedding",

@@ -15,11 +15,14 @@ export default function Testimonials() {
 
   // Auto-advance; restarts whenever the person picks a slide themselves.
   useEffect(() => {
+    if (total < 2) return;
     const id = setTimeout(() => setIndex((i) => (i + 1) % total), 8000);
     return () => clearTimeout(id);
   }, [index, total]);
 
   const go = (dir: 1 | -1) => setIndex((i) => (i + dir + total) % total);
+
+  if (!current) return null;
 
   return (
     <section id="testimonials" className="scroll-mt-20 bg-brand-cream py-24 md:py-32">

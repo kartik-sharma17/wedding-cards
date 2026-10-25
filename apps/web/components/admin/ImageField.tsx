@@ -44,7 +44,7 @@ export default function ImageField({ label, hint, max, existing, onExistingChang
     if (valid.length === 0) return;
 
     if (single) {
-      onFilesChange([valid[0]]);
+      onFilesChange(valid.slice(0, 1));
       onExistingChange([]);
       return;
     }

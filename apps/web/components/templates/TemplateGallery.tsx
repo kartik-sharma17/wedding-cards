@@ -8,8 +8,9 @@ type Props = { images: string[]; name: string };
 
 export default function TemplateGallery({ images, name }: Props) {
   const [active, setActive] = useState(0);
+  const activeSrc = images[active] ?? images[0];
 
-  if (images.length === 0) {
+  if (!activeSrc) {
     return (
       <div className="flex aspect-[4/5] items-center justify-center bg-gradient-to-br from-brand-teal to-brand-deep p-8 text-center font-script text-6xl text-brand-gold">
         {name}
@@ -22,7 +23,7 @@ export default function TemplateGallery({ images, name }: Props) {
       <div className="relative aspect-[4/5] overflow-hidden bg-brand-cream">
         <AnimatePresence mode="wait">
           <motion.div
-            key={images[active]}
+            key={activeSrc}
             className="absolute inset-0"
             initial={{ opacity: 0, scale: 1.03 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -30,7 +31,7 @@ export default function TemplateGallery({ images, name }: Props) {
             transition={{ duration: 0.45 }}
           >
             <SafeImage
-              src={images[active]}
+              src={activeSrc}
               alt={`${name} invitation, view ${active + 1} of ${images.length}`}
               sizes="(min-width:1024px) 50vw, 100vw"
               fit="contain"

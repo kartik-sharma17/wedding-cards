@@ -1,4 +1,4 @@
-import type { TemplateSummary } from "@/services/templateService";
+import type { TemplateSummary } from "@/redux/service/templateService";
 import type { CreateCardRequest, EventSchedule, SpecificDetails } from "./payloadTypes";
 import { isWeddingStyle } from "@/lib/templates";
 import { dateToNaiveIso, toNaiveIso } from "@/lib/dates";

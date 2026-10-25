@@ -1,4 +1,4 @@
-import type { TemplateCategory } from "@/services/templateService";
+import type { TemplateCategory } from "@/redux/service/templateService";
 import { isWeddingStyle } from "@/lib/templates";
 import { isGoogleMapsUrl, isValidEmail, isValidPhone } from "@/lib/validators";
 import { CATEGORY_COPY } from "./config";

@@ -10,6 +10,7 @@ import { EASE } from "@/lib/motion";
 
 export default function Services() {
   const [active, setActive] = useState(0);
+  const current = SERVICES[active];
 
   return (
     <section id="services" className="scroll-mt-20 bg-brand-cream pb-24 md:pb-32">
@@ -81,7 +82,7 @@ export default function Services() {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.6, ease: EASE }}
               >
-                <SafeImage src={SERVICES[active].image} alt={SERVICES[active].title} sizes="(min-width:1024px) 28rem, 90vw" />
+                {current && <SafeImage src={current.image} alt={current.title} sizes="(min-width:1024px) 28rem, 90vw" />}
               </motion.div>
             </AnimatePresence>
           </div>

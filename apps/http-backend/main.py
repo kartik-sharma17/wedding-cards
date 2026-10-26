@@ -18,7 +18,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://3.25.190.235:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

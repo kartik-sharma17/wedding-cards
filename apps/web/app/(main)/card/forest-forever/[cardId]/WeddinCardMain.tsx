@@ -8,7 +8,6 @@ import { getApiErrorMessage } from "@/lib/apiError";
 
 export default function WeddingTemplate1Page({ cardId }: { cardId?: string | undefined }) {
   const id = cardId?.trim();
-  console.log("this is card id -> ",id)
   if (!id) return <WeddingTemplate1 data={DEMO_WEDDING} isDemo />;
   return <CardFromApi cardId={id} />;
 }

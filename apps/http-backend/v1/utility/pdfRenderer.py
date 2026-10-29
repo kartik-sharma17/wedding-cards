@@ -9,6 +9,7 @@ The page size comes from the template's own CSS (@page), so nothing here knows t
 The page tells us when it's ready by setting data-ready="true" on .pp-root.
 """
 
+import asyncio
 import logging
 import os
 
@@ -27,10 +28,14 @@ CHROME_CHANNEL = settings.PDF_CHROME_CHANNEL or None
 READY_SELECTOR = '.pp-root[data-ready="true"]'
 FAILED = HTTPException(status_code=502, detail="We couldn't create the PDF. Please try again.")
 
+# Chrome uses a lot of RAM, so on a small server only render one PDF at a time.
+_render_lock = asyncio.Semaphore(1)
+
 
 async def render_pdf(url: str) -> bytes:
     try:
-        return await (_gotenberg(url) if GOTENBERG_URL else _playwright(url))
+        async with _render_lock:
+            return await (_gotenberg(url) if GOTENBERG_URL else _playwright(url))
     except HTTPException:
         raise
     except Exception as exc:  # any browser/network problem becomes one clean error for the user
@@ -46,8 +51,12 @@ async def _playwright(url: str) -> bytes:
         raise FAILED
 
     async with async_playwright() as pw:
-        # In Docker as root, launch with args=["--no-sandbox"].
-        browser = await pw.chromium.launch(channel=CHROME_CHANNEL)
+        # Flags that avoid common Chrome crashes on small servers.
+        # In Docker as root, also add "--no-sandbox".
+        browser = await pw.chromium.launch(
+            channel=CHROME_CHANNEL,
+            args=["--disable-dev-shm-usage", "--disable-gpu"],
+        )
         try:
             page = await browser.new_page()
 
@@ -57,12 +66,15 @@ async def _playwright(url: str) -> bytes:
             page.on("console", lambda m: problems.append(f"console.error: {m.text}") if m.type == "error" else None)
 
             await page.emulate_media(media="print")
-            response = await page.goto(url, wait_until="networkidle", timeout=45_000)
+
+            # Don't wait for "networkidle": it can never happen if the page keeps any request open.
+            # The page signals readiness itself (data-ready="true"), which we wait for below.
+            response = await page.goto(url, wait_until="domcontentloaded", timeout=45_000)
             if response is None or response.status >= 400:
                 raise RuntimeError(f"print page returned {response.status if response else 'nothing'}")
 
             try:
-                await page.wait_for_selector(READY_SELECTOR, state="attached", timeout=25_000)
+                await page.wait_for_selector(READY_SELECTOR, state="attached", timeout=60_000)
             except Exception:
                 raise RuntimeError(f"the print page never became ready. Browser errors: {problems[-5:] or 'none'}")
 

@@ -145,7 +145,7 @@ export default function RegisterForm() {
             onChange={set("email")}
             error={errors.email}
           />
-          <FormField
+          {/* <FormField
             label="Phone (optional)"
             type="tel"
             autoComplete="tel"
@@ -153,7 +153,7 @@ export default function RegisterForm() {
             value={values.phone}
             onChange={set("phone")}
             error={errors.phone}
-          />
+          /> */}
           <FormField
             label="Password"
             type="password"

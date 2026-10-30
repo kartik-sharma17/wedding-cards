@@ -55,7 +55,7 @@ export default function About() {
             </motion.div>
             <Reveal>
               <p className="max-w-xl font-serif text-2xl leading-relaxed text-brand-deep md:text-3xl">
-                Shaan started with a simple idea: a beautiful invitation should not take a week or a designer. Choose a design, add your details and send it to the whole family the same afternoon.
+                Festa Cards started with a simple idea: a beautiful invitation should not take a week or a designer. Choose a design, add your details and send it to the whole family the same afternoon.
               </p>
             </Reveal>
           </div>

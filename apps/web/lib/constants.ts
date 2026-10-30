@@ -84,7 +84,7 @@ export const PLANS = [
     name: "Download",
     price: "₹249",
     caption: "Starting from, per card",
-    features: ["Everything in Share online", "High-quality image download", "Print-ready PDF", "No Shaan watermark"],
+    features: ["Everything in Share online", "High-quality image download", "Print-ready PDF", "No Festa Cards watermark"],
     cta: "Create & download",
     highlight: true,
   },

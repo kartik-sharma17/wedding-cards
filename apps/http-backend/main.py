@@ -32,7 +32,7 @@ async def startup_event():
 
 @app.get("/")
 async def welcome():
-    return {"This is a api service for Shaan - A Invitation Card Making Site"}
+    return {"This is a api service for Festa Cards - A Invitation Card Making Site"}
 
 
 @app.head("/")

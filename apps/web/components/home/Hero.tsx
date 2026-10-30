@@ -45,7 +45,7 @@ export default function Hero() {
         className="absolute bottom-0 left-0 flex max-w-3xl flex-col gap-6 px-6 pb-16 md:px-12 md:pb-20 lg:px-20"
       >
         <motion.span variants={item} className="text-xs tracking-[0.2em] text-brand-gold uppercase">
-          Shaan is
+          Festa Cards is
         </motion.span>
         <motion.h1 variants={item} className="font-serif text-3xl leading-[1.15] md:text-5xl">
           Invitation cards with elegance, soul and intention. Made in minutes, sent free to every relative.

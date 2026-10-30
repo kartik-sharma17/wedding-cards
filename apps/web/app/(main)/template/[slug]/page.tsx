@@ -4,7 +4,7 @@ import TemplateDetailView from "@/components/templates/TemplateDetailView";
 type Props = { params: Promise<{ slug: string }> };
 
 export const metadata: Metadata = {
-  title: "Template preview – Shaan",
+  title: "Template preview – Festa Cards",
   description: "Preview this invitation design, see what's included and create your own card.",
 };
 

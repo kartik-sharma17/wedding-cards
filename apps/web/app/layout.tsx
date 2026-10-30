@@ -38,7 +38,7 @@ const poppins = Poppins({
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Shaan – Online invitation cards in minutes",
+  title: "Festa Cards – Online invitation cards in minutes",
   description:
     "Create beautiful invitation cards in minutes, share them free with your relatives, and download them from just ₹249.",
 };

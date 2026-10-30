@@ -33,7 +33,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-6 py-6 text-xs text-white/50 sm:flex-row sm:justify-between lg:px-10">
-          <p>© {new Date().getFullYear()} Shaan. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Festa Cards. All rights reserved.</p>
           <p>Made with care in India</p>
         </div>
       </div>

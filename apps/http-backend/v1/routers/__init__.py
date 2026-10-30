@@ -7,6 +7,7 @@ from .paymentRouter import paymentRouter
 from .couponRouter import adminCouponRouter
 from .pdfRouter import pdfRouter
 from .publicRouter import publicRouter
+from .contactRouter import contactRouter
 
 __all__ = [
     "authrouter",
@@ -17,5 +18,6 @@ __all__ = [
     "paymentRouter",
     "adminCouponRouter",
     "pdfRouter",
-    "publicRouter"
+    "publicRouter",
+    "contactRouter"
 ]

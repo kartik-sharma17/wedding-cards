@@ -9,7 +9,8 @@ from . import (
     paymentRouter,
     adminCouponRouter,
     pdfRouter,
-    publicRouter
+    publicRouter,
+    contactRouter
 )
 
 router = APIRouter()
@@ -23,3 +24,4 @@ router.include_router(paymentRouter)
 router.include_router(adminCouponRouter)
 router.include_router(pdfRouter)
 router.include_router(publicRouter)
+router.include_router(contactRouter)

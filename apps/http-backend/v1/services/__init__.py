@@ -6,6 +6,7 @@ from .paymentService import payment_service
 from .couponService import admin_coupon_service
 from .pdfService import pdf_service
 from .publicCardService import public_card_service
+from .Contactservice import contact_service
 
 __all__ = [
     "auth_service",
@@ -14,5 +15,6 @@ __all__ = [
     "admin_template_service",
     "payment_service",
     "admin_coupon_service",
-    "public_card_service"
+    "public_card_service",
+    "contact_service"
 ]

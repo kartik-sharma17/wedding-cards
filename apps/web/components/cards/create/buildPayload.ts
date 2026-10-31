@@ -1,4 +1,5 @@
 import type { TemplateSummary } from "@/redux/service/templateService";
+import type { UpdateCardRequest } from "@/redux/service/cardService";
 import type { CreateCardRequest, EventSchedule, SpecificDetails } from "./payloadTypes";
 import { isWeddingStyle } from "@/lib/templates";
 import { dateToNaiveIso, toNaiveIso } from "@/lib/dates";
@@ -7,9 +8,8 @@ import { CUSTOM_HOST_LINE, type CardFormValues } from "./types";
 /** Empty strings become `undefined` so they are dropped from the JSON body. */
 const clean = (value: string) => value.trim() || undefined;
 
-export function buildCreateCardRequest(template: TemplateSummary, v: CardFormValues): CreateCardRequest {
-  const category = template.category;
-
+/** Everything the form collects, shaped for the API. Shared by create and edit. */
+function buildCardBody(category: TemplateSummary["category"], v: CardFormValues) {
   const venue = {
     venueName: clean(v.venueName),
     venueAddress: clean(v.venueAddress),
@@ -55,8 +55,6 @@ export function buildCreateCardRequest(template: TemplateSummary, v: CardFormVal
   }
 
   return {
-    templateId: template.id,
-    templateCategory: category,
     specificDetails,
     invitationMessage: clean(v.invitationMessage),
     rsvpContactName: clean(v.rsvpContactName),
@@ -66,6 +64,32 @@ export function buildCreateCardRequest(template: TemplateSummary, v: CardFormVal
     dressCode: clean(v.dressCode),
     additionalNotes: clean(v.additionalNotes),
     language: v.language || "en",
+  };
+}
+
+export function buildCreateCardRequest(template: Pick<TemplateSummary, "id" | "category">, v: CardFormValues): CreateCardRequest {
+  return {
+    templateId: template.id,
+    templateCategory: template.category,
+    ...buildCardBody(template.category, v),
     customization: {},
+  };
+}
+
+/**
+ * For editing, a field the person emptied must be sent as null, otherwise the old
+ * value would stay on the card. specificDetails is replaced as a whole.
+ */
+export function buildUpdateCardRequest(category: TemplateSummary["category"], v: CardFormValues): UpdateCardRequest {
+  const b = buildCardBody(category, v);
+  return {
+    ...b,
+    invitationMessage: b.invitationMessage ?? null,
+    rsvpContactName: b.rsvpContactName ?? null,
+    rsvpPhone: b.rsvpPhone ?? null,
+    rsvpEmail: b.rsvpEmail ?? null,
+    rsvpByDate: b.rsvpByDate ?? null,
+    dressCode: b.dressCode ?? null,
+    additionalNotes: b.additionalNotes ?? null,
   };
 }

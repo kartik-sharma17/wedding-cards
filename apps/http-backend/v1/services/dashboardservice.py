@@ -4,6 +4,7 @@ from v1.db.connectDB import getDB
 from v1.utility import response
 
 RECENT_CARDS_LIMIT = 6
+RECENT_PAYMENTS_LIMIT = 5
 
 
 def _toOid(field: str) -> dict:
@@ -48,14 +49,15 @@ def _serializeCard(c: dict) -> dict:
     }
 
 
-def _demoPayments(cards: list[dict]) -> dict:
+def _paymentSummary(totals: dict, paidCards: list[dict]) -> dict:
     """
-    TEMPORARY: payments aren't implemented yet, so this returns sample data tied
-    to the user's most recent cards. The response carries `isDemo: True` so the
-    frontend can label it.
+    TEMPORARY: the Payment collection isn't wired up yet, so payments are derived
+    from cards marked isPaid, priced at their template's price. A card that
+    hasn't been paid for adds nothing to the total. `isDemo: True` tells the
+    frontend these are placeholders.
 
-    To go live, replace the call in GetDashboard with real queries on the
-    "Payment" collection (fields from models/payment.py):
+    To go live, replace this with real queries on the "Payment" collection
+    (fields from models/payment.py):
 
         match = {"userId": str(user["_id"])}
         totals = await getDB()["Payment"].aggregate([
@@ -64,29 +66,25 @@ def _demoPayments(cards: list[dict]) -> dict:
         ]).to_list(1)
         recent = await getDB()["Payment"].find(match).sort("_id", -1).limit(5).to_list(5)
     """
-    samples = [(499.0, "paid"), (799.0, "paid"), (299.0, "failed")]
-    now = datetime.now(timezone.utc)
-
     recent = [
         {
-            "id": f"demo_pay_{i + 1}",
-            "cardId": card["id"],
-            "cardTitle": card["title"],
-            "amount": amount,
-            "currency": "INR",
-            "status": status,
+            "id": f"demo_pay_{c['_id']}",
+            "cardId": str(c["_id"]),
+            "cardTitle": _cardTitle(c.get("details")),
+            "amount": float(c.get("price") or 0),
+            "currency": c.get("currency") or "INR",
+            "status": "paid",
             "provider": "razorpay",
-            "paidAt": _iso(now - timedelta(days=3 * (i + 1))),
+            "paidAt": _iso(c.get("paidAt") or c.get("createdAt")),
         }
-        for i, (card, (amount, status)) in enumerate(zip(cards, samples))
+        for c in paidCards
     ]
-    paid = [p for p in recent if p["status"] == "paid"]
 
     return {
         "isDemo": True,
-        "currency": "INR",
-        "totalSpent": sum(p["amount"] for p in paid),
-        "totalPayments": len(paid),
+        "currency": recent[0]["currency"] if recent else "INR",
+        "totalSpent": float(totals.get("total") or 0),
+        "totalPayments": totals.get("count", 0),
         "recent": recent,
     }
 
@@ -104,7 +102,8 @@ class DashboardService:
         # One round trip: join each card with its details + template, then split
         # the same joined set into several result groups with $facet.
         pipeline = [
-            {"$match": {"ownerId": ownerId}},
+            # isDelete != True also keeps older cards that don't have the field yet.
+            {"$match": {"ownerId": ownerId, "isDeleted": {"$ne": True}}},
             {
                 "$addFields": {
                     "_detailsOid": _toOid("$cardDetailsId"),
@@ -173,6 +172,31 @@ class DashboardService:
                             }
                         },
                     ],
+                    # Spending counts only cards that have actually been paid for.
+                    "paidTotals": [
+                        {"$match": {"isPaid": True}},
+                        {
+                            "$group": {
+                                "_id": None,
+                                "total": {"$sum": {"$ifNull": ["$_template.price", 0]}},
+                                "count": {"$sum": 1},
+                            }
+                        },
+                    ],
+                    "paidCards": [
+                        {"$match": {"isPaid": True}},
+                        {"$sort": {"paidAt": -1, "_id": -1}},
+                        {"$limit": RECENT_PAYMENTS_LIMIT},
+                        {
+                            "$project": {
+                                "paidAt": 1,
+                                "createdAt": {"$toDate": "$_id"},
+                                "details": "$_details.specificDetails",
+                                "price": "$_template.price",
+                                "currency": "$_template.currency",
+                            }
+                        },
+                    ],
                     "recent": [
                         # Card docs are inserted without createAt, so ObjectId order
                         # (which embeds creation time) is the reliable "newest first".
@@ -204,6 +228,7 @@ class DashboardService:
         totals = (facet.get("totals") or [{}])[0]
         upcoming = (facet.get("upcomingCount") or [{}])[0].get("n", 0)
         recentCards = [_serializeCard(c) for c in facet.get("recent", [])]
+        paidTotals = (facet.get("paidTotals") or [{}])[0]
 
         nextEvent = None
         if facet.get("nextEvent"):
@@ -242,7 +267,7 @@ class DashboardService:
                 "cardsByCategory": cardsByCategory,
                 "nextEvent": nextEvent,
                 "recentCards": recentCards,
-                "payments": _demoPayments(recentCards),
+                "payments": _paymentSummary(paidTotals, facet.get("paidCards", [])),
             },
         )
 

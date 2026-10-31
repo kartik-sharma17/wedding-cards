@@ -1,6 +1,9 @@
 import secrets
 
+from fastapi.encoders import jsonable_encoder
+
 from v1.db.connectDB import getDB
+from v1.models.base import timeZone
 from v1.schema import CreateCardSchema, UpdateCardSchema
 from v1.utility import (
     response,
@@ -9,6 +12,14 @@ from v1.utility import (
     ForbiddenError,
     BadRequestError,
 )
+
+LOCKED_MESSAGE = (
+    "This card has been paid for, so it can no longer be edited. "
+    "Please contact our support team for any changes"
+)
+
+# Sending null clears an optional field, but these can never be empty.
+NOT_CLEARABLE = ("specificDetails", "language", "status", "customization", "photoUrls")
 
 
 class CardService:
@@ -23,6 +34,18 @@ class CardService:
     @property
     def templates(self):
         return getDB()["Template"]
+
+    async def findOwnedCard(self, user: dict, cardId: str):
+        card = await self.cards.find_one({"_id": toObjectId(cardId, "Card not found")})
+
+        # A deleted card behaves as if it never existed.
+        if card is None or card.get("isDeleted"):
+            raise NotFoundError("Card not found")
+
+        if card["ownerId"] != str(user["_id"]):
+            raise ForbiddenError("You don't have access to this card")
+
+        return card
 
     async def createCard(self, user: dict, payload: CreateCardSchema):
         template = await self.templates.find_one(
@@ -53,6 +76,7 @@ class CardService:
             "paymentId": None,
             "viewCount": 0,
             "rsvpCount": 0,
+            "isDeleted": False,
         }
         result = await self.cards.insert_one(card_doc)
         cardId = result.inserted_id
@@ -84,16 +108,10 @@ class CardService:
         )
 
     async def readCard(self, user: dict, cardId: str):
-        card = await self.cards.find_one({"_id": toObjectId(cardId, "Card not found")})
-
-        if card is None:
-            raise NotFoundError("Card not found")
-
-        if card["ownerId"] != str(user["_id"]):
-            raise ForbiddenError("You don't have access to this card")
+        card = await self.findOwnedCard(user, cardId)
 
         details = await self.details.find_one(
-            {"_id": toObjectId(card["cardDetailsId"], "Card details not found")}
+            {"_id": toObjectId(card["cardDetailsId"], "Card details not found"), "isDeleted": {"$ne": True}}
         )
 
         if details is None:
@@ -102,20 +120,38 @@ class CardService:
         card["_id"] = str(card["_id"])
         details["_id"] = str(details["_id"])
 
+        # The details hold datetimes, which response() can't turn into JSON on its own.
         return response(
-            message="Card fetched successfully", data={"card": card, "details": details}
+            message="Card fetched successfully",
+            data=jsonable_encoder({"card": card, "details": details}),
         )
 
     async def updateCard(self, user: dict, cardId: str, payload: UpdateCardSchema):
-        card = await self.cards.find_one({"_id": toObjectId(cardId, "Card not found")})
+        card = await self.findOwnedCard(user, cardId)
 
-        if card is None:
-            raise NotFoundError("Card not found")
+        # Editing is only allowed until the card is paid for.
+        if card.get("isPaid"):
+            raise ForbiddenError(LOCKED_MESSAGE)
 
-        if card["ownerId"] != str(user["_id"]):
-            raise ForbiddenError("You don't have access to this card")
+        details = await self.details.find_one(
+            {"_id": toObjectId(card["cardDetailsId"], "Card details not found")}
+        )
 
-        update_data = payload.model_dump(exclude_unset=True, exclude_none=True)
+        if details is None:
+            raise NotFoundError("Card details not found")
+
+        # null is kept on purpose: it clears an optional field such as dressCode.
+        update_data = payload.model_dump(exclude_unset=True)
+
+        for key in NOT_CLEARABLE:
+            if key in update_data and update_data[key] is None:
+                del update_data[key]
+
+        specific = update_data.get("specificDetails")
+        if specific is not None and specific["category"] != details["templateCategory"]:
+            raise BadRequestError(
+                "specific Details category does not match template Category"
+            )
 
         card_fields = {}
         details_fields = {}
@@ -134,25 +170,21 @@ class CardService:
 
         if details_fields:
             await self.details.update_one(
-                {"_id": toObjectId(card["cardDetailsId"], "Card details not found")},
+                {"_id": details["_id"]},
                 {"$set": details_fields},
             )
 
         return response(message="Card updated successfully")
 
     async def deleteCard(self, user: dict, cardId: str):
-        card = await self.cards.find_one({"_id": toObjectId(cardId, "Card not found")})
+        card = await self.findOwnedCard(user, cardId)
 
-        if card is None:
-            raise NotFoundError("Card not found")
-
-        if card["ownerId"] != str(user["_id"]):
-            raise ForbiddenError("You don't have access to this card")
-
-        await self.details.delete_one(
-            {"_id": toObjectId(card["cardDetailsId"], "Card details not found")}
+        # Soft delete, allowed whether or not the card is paid. Nothing is removed,
+        # so payment records and the card's details stay intact.
+        await self.cards.update_one(
+            {"_id": card["_id"]},
+            {"$set": {"isDeleted": True, "deletedAt": timeZone()}},
         )
-        await self.cards.delete_one({"_id": card["_id"]})
 
         return response(message="Card deleted successfully")
 

@@ -66,6 +66,14 @@ export type CreateCardRequest = {
 
 export type CreateCardResponse = { cardId: string; publicSlug: string };
 
+type Clearable<T, K extends keyof T> = Omit<T, K> & { [P in K]?: T[P] | null };
+
+/** PATCH /cards/{id}: the create fields minus the template. Send null to clear an optional field. */
+export type UpdateCardRequest = Clearable<
+  Omit<CreateCardRequest, "templateId" | "templateCategory">,
+  "invitationMessage" | "rsvpContactName" | "rsvpPhone" | "rsvpEmail" | "rsvpByDate" | "dressCode" | "additionalNotes"
+>;
+
 /* ------------------------------------------------------------------ */
 /* RESPONSE types (what GET /cards/{cardId} returns)                   */
 /* Pydantic `X | None` fields come back as `null`, not missing.        */
@@ -155,8 +163,18 @@ export const cardService = RootApiService.injectEndpoints({
       query: (cardId) => ({ url: `/cards/${encodeURIComponent(cardId)}`, method: "GET" }),
       providesTags: ["Card"], // add "Card" to tagTypes in RootApiService if it isn't there yet
     }),
+    // Rejected by the API with a 403 once the card is paid for.
+    updateCard: build.mutation<ApiResponse<null>, { cardId: string; body: UpdateCardRequest }>({
+      query: ({ cardId, body }) => ({ url: `/cards/${encodeURIComponent(cardId)}`, method: "PATCH", body }),
+      invalidatesTags: ["Card"],
+    }),
+    // Soft delete: allowed whether or not the card is paid.
+    deleteCard: build.mutation<ApiResponse<null>, string>({
+      query: (cardId) => ({ url: `/cards/${encodeURIComponent(cardId)}`, method: "DELETE" }),
+      invalidatesTags: ["Card"],
+    }),
   }),
   overrideExisting: false,
 });
 
-export const { useCreateCardMutation, useGetCardQuery } = cardService;
+export const { useCreateCardMutation, useGetCardQuery, useUpdateCardMutation, useDeleteCardMutation } = cardService;

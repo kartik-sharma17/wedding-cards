@@ -9,7 +9,7 @@ const isWholeNumber = (v: string, min: number, max: number) => {
   return Number.isInteger(n) && n >= min && n <= max;
 };
 
-export function validateStep(step: number, v: CardFormValues, category: TemplateCategory): FormErrors {
+export function validateStep(step: number, v: CardFormValues, category: TemplateCategory, initial?: CardFormValues): FormErrors {
   const errors: FormErrors = {};
   const copy = CATEGORY_COPY[category];
 
@@ -20,7 +20,7 @@ export function validateStep(step: number, v: CardFormValues, category: Template
     }
 
     if (!v.eventDate) errors.eventDate = "Choose a date and time.";
-    else if (new Date(v.eventDate).getTime() <= Date.now()) errors.eventDate = "Choose a date in the future.";
+    else if (new Date(v.eventDate).getTime() <= Date.now() && v.eventDate !== initial?.eventDate) errors.eventDate = "Choose a date in the future.";
 
     if (category === "anniversary" && v.yearsTogether && !isWholeNumber(v.yearsTogether, 1, 100)) {
       errors.yearsTogether = "Enter a whole number between 1 and 100.";

@@ -15,8 +15,9 @@ const newRow = (): EventRow => ({
   venueAddress: "",
 });
 
-export function useCreateCardForm(category: TemplateCategory) {
-  const [values, setValues] = useState<CardFormValues>(INITIAL_VALUES);
+export function useCreateCardForm(category: TemplateCategory, initialValues?: CardFormValues) {
+  const [values, setValues] = useState<CardFormValues>(initialValues ?? INITIAL_VALUES);
+  const [initial] = useState(initialValues); // lets validation tell an unchanged event date from a new one
   const [errors, setErrors] = useState<FormErrors>({});
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -47,7 +48,7 @@ export function useCreateCardForm(category: TemplateCategory) {
   };
 
   const goNext = (): boolean => {
-    const found = validateStep(step, values, category);
+    const found = validateStep(step, values, category, initial);
     setErrors(found);
     if (Object.keys(found).length) return false;
     setDirection(1);
@@ -64,7 +65,7 @@ export function useCreateCardForm(category: TemplateCategory) {
   /** Validates every step. Returns true when all are valid, otherwise jumps to the first bad step. */
   const validateAll = (): boolean => {
     for (let i = 0; i < STEP_LABELS.length; i++) {
-      const found = validateStep(i, values, category);
+      const found = validateStep(i, values, category, initial);
       if (Object.keys(found).length) {
         setErrors(found);
         setDirection(i < step ? -1 : 1);

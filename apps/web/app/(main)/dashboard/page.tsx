@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Eye, Users } from "lucide-react";
+import { Eye, Lock, Pencil, Trash2, Users } from "lucide-react";
 import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import BrandButton from "@/components/ui/BrandButton";
 import StatusMessage from "@/components/templates/StatusMessage"; // adjust if it lives elsewhere
@@ -11,6 +11,10 @@ import { getToken } from "@/lib/auth";
 import { ROUTES } from "@/lib/routes";
 import { CATEGORY_LABELS } from "@/redux/service/templateService";
 import { useGetDashboardQuery, type DashboardCard, type DashboardPayment } from "@/redux/service/dashboardservice";
+import { useDeleteCardMutation } from "@/redux/service/cardService";
+import ConfirmDialog from "@/components/admin/ConfirmDialog";
+import EditCardDialog from "@/components/cards/create/EditCardDialog";
+import { getApiErrorMessage } from "@/lib/auth";
 
 const money = (amount: number, currency: string) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: currency || "INR", maximumFractionDigits: 0 }).format(amount);
@@ -47,44 +51,72 @@ function SectionTitle({ children, action }: { children: React.ReactNode; action?
   );
 }
 
-function CardTile({ card }: { card: DashboardCard }) {
+function CardTile({ card, onEdit, onDelete }: { card: DashboardCard; onEdit: () => void; onDelete: () => void }) {
   const published = card.status === "published";
+  const actionBtn = "inline-flex items-center gap-2 border px-4 py-2 text-sm transition-colors";
   return (
-    <Link href={cardHref(card)} className="group flex flex-col gap-4">
-      <div className="relative aspect-[4/5] overflow-hidden bg-brand-cream">
-        {card.thumbnailUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={card.thumbnailUrl}
-            alt={card.templateName ?? card.title}
-            className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-          />
-        )}
-        <span
-          className={`absolute left-3 top-3 px-3 py-1 text-xs ${
-            published ? "bg-brand-deep text-white" : "bg-white text-brand-deep"
-          }`}
+    <div className="flex flex-col gap-4">
+      <Link href={cardHref(card)} className="group flex flex-col gap-4">
+        <div className="relative aspect-[4/5] overflow-hidden bg-brand-cream">
+          {card.thumbnailUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={card.thumbnailUrl}
+              alt={card.templateName ?? card.title}
+              className="size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          )}
+          <span
+            className={`absolute left-3 top-3 px-3 py-1 text-xs ${
+              published ? "bg-brand-deep text-white" : "bg-white text-brand-deep"
+            }`}
+          >
+            {published ? "Published" : "Draft"}
+          </span>
+        </div>
+        <div>
+          <h3 className="font-serif text-xl text-brand-deep">{card.title}</h3>
+          <p className="text-sm text-muted-foreground">
+            {card.templateName ?? "Template unavailable"}
+            {card.eventDate && `, ${fmtDate(card.eventDate)}`}
+          </p>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1">
+            <Eye className="size-3.5" /> {card.viewCount}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Users className="size-3.5" /> {card.rsvpCount} RSVPs
+          </span>
+          <span className="ml-auto">{card.isPaid ? "Paid" : "Unpaid"}</span>
+        </div>
+      </Link>
+
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={card.isPaid}
+          title={card.isPaid ? "Editing is locked after payment" : "Edit card"}
+          className={`${actionBtn} border-brand-deep text-brand-deep hover:bg-brand-deep hover:text-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-brand-deep`}
         >
-          {published ? "Published" : "Draft"}
-        </span>
+          <Pencil className="size-4" /> Edit
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className={`${actionBtn} border-border text-brand-deep/70 hover:border-destructive hover:text-destructive`}
+        >
+          <Trash2 className="size-4" /> Delete
+        </button>
       </div>
-      <div>
-        <h3 className="font-serif text-xl text-brand-deep">{card.title}</h3>
-        <p className="text-sm text-muted-foreground">
-          {card.templateName ?? "Template unavailable"}
-          {card.eventDate && `, ${fmtDate(card.eventDate)}`}
+
+      {card.isPaid && (
+        <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+          <Lock className="mt-0.5 size-3.5 shrink-0" /> Editing is locked after payment. Please contact our support team for any changes.
         </p>
-      </div>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1">
-          <Eye className="size-3.5" /> {card.viewCount}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <Users className="size-3.5" /> {card.rsvpCount} RSVPs
-        </span>
-        <span className="ml-auto">{card.isPaid ? "Paid" : "Unpaid"}</span>
-      </div>
-    </Link>
+      )}
+    </div>
   );
 }
 
@@ -92,6 +124,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const [ready, setReady] = useState(false);
+  const [editing, setEditing] = useState<DashboardCard | null>(null);
+  const [deleting, setDeleting] = useState<DashboardCard | null>(null);
+  const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
+  const [deleteCard, { isLoading: isDeleting }] = useDeleteCardMutation();
 
   // Dashboard is for signed-in users only.
   useEffect(() => {
@@ -113,6 +149,32 @@ export default function DashboardPage() {
   useEffect(() => {
     if (isError && status === 401) router.replace(ROUTES.login(pathname));
   }, [isError, status, router, pathname]);
+
+  // Clear the notice after a few seconds.
+  useEffect(() => {
+    if (!notice) return;
+    const id = setTimeout(() => setNotice(null), 6000);
+    return () => clearTimeout(id);
+  }, [notice]);
+
+  const confirmDelete = async () => {
+    if (!deleting) return;
+    try {
+      await deleteCard(deleting.id).unwrap();
+      setNotice({ kind: "success", text: `"${deleting.title}" was deleted.` });
+      void refetch();
+    } catch (err) {
+      setNotice({ kind: "error", text: getApiErrorMessage(err, "We couldn't delete this card. Please try again.") });
+    } finally {
+      setDeleting(null);
+    }
+  };
+
+  const onEditSaved = () => {
+    setEditing(null);
+    setNotice({ kind: "success", text: "Your changes were saved." });
+    void refetch();
+  };
 
   if (!ready || isLoading) {
     return (
@@ -168,6 +230,19 @@ export default function DashboardPage() {
           </BrandButton>
         </div>
 
+        {notice && (
+          <p
+            role={notice.kind === "error" ? "alert" : "status"}
+            className={`mb-8 border px-4 py-3 text-sm ${
+              notice.kind === "error"
+                ? "border-destructive/30 bg-destructive/5 text-destructive"
+                : "border-brand-teal/30 bg-brand-teal/5 text-brand-teal"
+            }`}
+          >
+            {notice.text}
+          </p>
+        )}
+
         {/* Key numbers */}
         <div className="mb-16 grid grid-cols-2 gap-px border border-border bg-border lg:grid-cols-4">
           <Stat
@@ -220,7 +295,7 @@ export default function DashboardPage() {
               <SectionTitle>Your recent cards</SectionTitle>
               <div className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                 {recentCards.map((card) => (
-                  <CardTile key={card.id} card={card} />
+                  <CardTile key={card.id} card={card} onEdit={() => setEditing(card)} onDelete={() => setDeleting(card)} />
                 ))}
               </div>
             </div>
@@ -283,6 +358,31 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {editing && (
+        <EditCardDialog
+          key={editing.id}
+          cardId={editing.id}
+          templateName={editing.templateName ?? editing.title}
+          templateSlug={editing.templateSlug}
+          onClose={() => setEditing(null)}
+          onSaved={onEditSaved}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title="Delete this card?"
+        message={
+          deleting
+            ? `"${deleting.title}" will be removed from your dashboard and its link will stop working.${deleting.isPaid ? " Your payment record is kept." : ""}`
+            : ""
+        }
+        confirmLabel="Delete"
+        busy={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleting(null)}
+      />
     </section>
   );
 }

@@ -31,3 +31,7 @@ class Card(BaseClass, IdentifiedModel):
 
     viewCount: int = 0
     rsvpCount: int = 0
+
+    # Soft delete: the document is kept, but hidden everywhere.
+    isDeleted: bool = False
+    deletedAt: datetime | None = None

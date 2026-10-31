@@ -1,10 +1,8 @@
-import type { Metadata } from "next";
 import TemplatesExplorer from "@/components/templates/TemplatesExplorer";
+import { PAGES, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Invitation templates – Festa Cards",
-  description: "Browse wedding, anniversary, birthday and baby shower invitation designs. Create and share free.",
-};
+// This stays a server component so it can export metadata; the interactive grid is in TemplatesExplorer.
+export const metadata = pageMetadata({ ...PAGES.templates, path: "/templates" });
 
 export default function TemplatesPage() {
   return <TemplatesExplorer />;

@@ -87,15 +87,7 @@ export const PLANS = [
     features: ["Everything in Share online", "High-quality image download", "Print-ready PDF", "No Festa Cards watermark"],
     cta: "Create & download",
     highlight: true,
-  },
-  {
-    name: "Event pack",
-    price: "₹499",
-    caption: "Up to 5 cards, one event",
-    features: ["Everything in Download", "Sangeet, mehendi, wedding and more", "Matching designs across cards", "One download bundle"],
-    cta: "Create a pack",
-    highlight: false,
-  },
+  }
 ];
 
 export const TESTIMONIALS = [
@@ -136,6 +128,8 @@ export const FOOTER_LINKS = [
     links: [
       { label: "About us", href: "/#about" },
       { label: "Reviews", href: "/#testimonials" },
+      { label: "Contact Us", href: "/contact-us" },
+      { label: "Privacy Policy", href: "/privacy-policy" },
     ],
   },
   {

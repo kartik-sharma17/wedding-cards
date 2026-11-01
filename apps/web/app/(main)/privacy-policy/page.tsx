@@ -221,13 +221,9 @@ const SECTIONS: Section[] = [
     body: (
       <P>
         Questions about this policy? Reach us through the{" "}
-        <Link href="/contact" className="text-brand-deep underline">
+        <Link href="/contact-us" className="text-brand-deep underline">
           contact page
         </Link>{" "}
-        or at{" "}
-        <a href={`mailto:${SITE.supportEmail}`} className="text-brand-deep underline">
-          {SITE.supportEmail}
-        </a>
         .{SITE.address && ` Our address is ${SITE.address}.`}
       </P>
     ),

@@ -17,7 +17,7 @@ export default function Pricing() {
           description="Create and send as many cards as you like. A download starts at ₹249."
         />
 
-        <div className="mt-16 grid items-stretch gap-6 lg:grid-cols-3">
+        <div className="mt-16 grid items-stretch gap-6 lg:grid-cols-2">
           {PLANS.map((plan, i) => (
             <motion.article
               key={plan.name}
@@ -48,7 +48,7 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <BrandButton href="/register" variant={plan.highlight ? "gold" : "deep"} className="w-full">
+              <BrandButton href="/template" variant={plan.highlight ? "gold" : "deep"} className="w-full">
                 {plan.cta}
               </BrandButton>
             </motion.article>

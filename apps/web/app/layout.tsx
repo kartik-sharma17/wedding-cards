@@ -12,6 +12,7 @@ import SmoothScrollProvider from "../components/layout/SmoothScrollProvider";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { ReduxProvider } from "@/redux/reduxProvider";
+import ClarityAnalytics from "@/lib/Clarity";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -87,7 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body>
         <ReduxProvider>
-          <SmoothScrollProvider>{children}</SmoothScrollProvider>
+          <SmoothScrollProvider><ClarityAnalytics />{children}</SmoothScrollProvider>
         </ReduxProvider>
       </body>
       {GA_ID && <GoogleAnalytics gaId={GA_ID} />}

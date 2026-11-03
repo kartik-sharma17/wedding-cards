@@ -87,7 +87,7 @@ const Skeleton = () => (
     <div
       role="status"
       aria-label="Loading invitation"
-      style={{ width: "min(88vw, 440px)", aspectRatio: "5 / 7", borderRadius: 3, background: "#f4eddf", border: "1px solid rgba(176,141,69,.55)", animation: "tlpulse 1.4s ease-in-out infinite" }}
+      style={{ width: "min(88vw, 440px)", aspectRatio: "2 / 3", borderRadius: 3, background: "#f4eddf", border: "1px solid rgba(176,141,69,.55)", animation: "tlpulse 1.4s ease-in-out infinite" }}
     />
   </>
 );

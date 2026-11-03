@@ -66,7 +66,7 @@ const Skeleton = () => (
       aria-label="Loading card"
       style={{
         width: "min(88vw, 440px)",
-        aspectRatio: "5 / 7",
+        aspectRatio: "2 / 3",
         borderRadius: 3,
         background: "#f4eddf",
         border: "1px solid rgba(176,141,69,.55)",

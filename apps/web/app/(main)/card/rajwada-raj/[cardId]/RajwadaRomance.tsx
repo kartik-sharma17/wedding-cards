@@ -114,20 +114,22 @@ const ARCH = (() => {
   }
   let d = "M9 142L9 72";
   for (let i = 1; i <= N; i++) {
-    const c = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    const prev = pts[i - 1]!, current = pts[i]!;
+    const c = Math.hypot(current[0] - prev[0], current[1] - prev[1]);
     const r = f2(c * 0.62);
-    d += `A${r} ${r} 0 0 1 ${f2(pts[i][0])} ${f2(pts[i][1])}`;
+    d += `A${r} ${r} 0 0 1 ${f2(current[0])} ${f2(current[1])}`;
   }
   for (let i = N - 1; i >= 0; i--) {
-    const c = Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]);
+    const current = pts[i]!, next = pts[i + 1]!;
+    const c = Math.hypot(current[0] - next[0], current[1] - next[1]);
     const r = f2(c * 0.62);
-    d += `A${r} ${r} 0 0 1 ${f2(100 - pts[i][0])} ${f2(pts[i][1])}`;
+    d += `A${r} ${r} 0 0 1 ${f2(100 - current[0])} ${f2(current[1])}`;
   }
   d += "L91 142";
   let ticks = "";
   for (let i = 1; i < N; i++) {
-    const [x, y] = pts[i];
-    const [nx, ny] = tick[i];
+    const [x, y] = pts[i]!;
+    const [nx, ny] = tick[i]!;
     ticks += `M${f2(x)} ${f2(y)}L${f2(x + nx * 1.7)} ${f2(y + ny * 1.7)}`;
     ticks += `M${f2(100 - x)} ${f2(y)}L${f2(100 - x - nx * 1.7)} ${f2(y + ny * 1.7)}`;
   }
@@ -167,7 +169,14 @@ function vine(seed: number, curve: [Pt, Pt, Pt, Pt], n: number, leavesN: number,
   return { leaves, flowers, twigs: twigs.join(""), stem: `M${a[0]} ${a[1]}C${b[0]} ${b[1]} ${c[0]} ${c[1]} ${d[0]} ${d[1]}` };
 }
 
-const VINES = [
+type VineSpec = {
+  leaves: { x: number; y: number; rot: number; s: number }[];
+  flowers: { x: number; y: number; rot: number; s: number; tone: number }[];
+  twigs: string;
+  stem: string;
+};
+
+const VINES: VineSpec[] = [
   vine(7, [[101, 3], [86, 9], [70, -1], [50, 3]], 120, 80, 7, 4.5, 1.1),
   vine(21, [[94, -4], [105, 26], [90, 52], [98, 78]], 190, 110, 9, 4.5, 1.35),
 ];
@@ -405,8 +414,8 @@ function Decor() {
       <Bells />
 
       {/* bougainvillea cascade */}
-      <Vine v={VINES[0]} />
-      <Vine v={VINES[1]} />
+      <Vine v={VINES[0]!} />
+      <Vine v={VINES[1]!} />
 
       {/* left bouquet */}
       <g>
@@ -415,7 +424,7 @@ function Decor() {
         <Leaf x={18} y={134} rot={-20} s={2.4} />
         <Leaf x={28} y={138} rot={-8} s={2} />
         <Leaf x={9} y={120} rot={-80} s={1.6} />
-        {[[10, 126, 20, 0.9, 1], [17, 124, 80, 0.85, 2], [21, 130, 150, 0.8, 0], [6, 131, 40, 0.8, 3], [15, 128, 200, 0.7, 1], [24, 135, 120, 0.75, 2]].map(([x, y, rot, s, tone], i) => (
+        {([ [10, 126, 20, 0.9, 1], [17, 124, 80, 0.85, 2], [21, 130, 150, 0.8, 0], [6, 131, 40, 0.8, 3], [15, 128, 200, 0.7, 1], [24, 135, 120, 0.75, 2] ] as Array<[number, number, number, number, number]>).map(([x, y, rot, s, tone], i) => (
           <Bract key={i} x={x} y={y} rot={rot} s={s * 1.25} tone={tone} />
         ))}
         <Rose x={3.4} y={122} s={0.6} kind="p" />
@@ -430,7 +439,7 @@ function Decor() {
         <Leaf x={82} y={134} rot={-160} s={2.4} />
         <Leaf x={72} y={138} rot={-172} s={2} />
         <Leaf x={91} y={120} rot={-100} s={1.6} />
-        {[[90, 126, 160, 0.9, 1], [83, 124, 100, 0.85, 2], [79, 130, 30, 0.8, 0], [94, 131, 140, 0.8, 3], [85, 128, 340, 0.7, 1], [76, 135, 60, 0.75, 2]].map(([x, y, rot, s, tone], i) => (
+        {([ [90, 126, 160, 0.9, 1], [83, 124, 100, 0.85, 2], [79, 130, 30, 0.8, 0], [94, 131, 140, 0.8, 3], [85, 128, 340, 0.7, 1], [76, 135, 60, 0.75, 2] ] as Array<[number, number, number, number, number]>).map(([x, y, rot, s, tone], i) => (
           <Bract key={i} x={x} y={y} rot={rot} s={s * 1.25} tone={tone} />
         ))}
         <Rose x={96.6} y={123} s={0.64} kind="p" />

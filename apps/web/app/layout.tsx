@@ -87,6 +87,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       )}
     >
       <body>
+      <head>
+        <meta name="google-site-verification" content="p8JzmOHrg4JmsYkLbat9-GJX3cKYbhA3rlq2cMJEN90" />
+      </head>
         <ReduxProvider>
           <SmoothScrollProvider><ClarityAnalytics />{children}</SmoothScrollProvider>
         </ReduxProvider>
